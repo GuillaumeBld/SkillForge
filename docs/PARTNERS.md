@@ -160,31 +160,74 @@ Intuitive management interface:
 
 ### Workforce Agency Integration
 
+All endpoints run under `/api/v1/`. Replace `https://api.skillforge.com` with `https://sandbox.api.skillforge.com` for sandbox validation.
+
 **Step 1: Resume Import**
+- **Endpoint:** `POST /api/v1/candidates/import`
+- **Rate Limit:** 1,000 requests/hour (standard); sandbox capped at 200/hour
+- **Webhooks:** `import.completed`, `import.failed`
+- **Sample Request (JSON)**
+```json
+{
+  "batch_id": "wf_batch_001",
+  "webhook_url": "https://agency.example.org/hooks/import",
+  "candidates": [
+    {
+      "external_id": "wf-1001",
+      "name": "Maya Ortiz",
+      "email": "maya.ortiz@example.org",
+      "resume_url": "https://files.example.org/maya.pdf"
+    }
+  ]
+}
 ```
-POST /api/v1/candidates/import
-Content: Resume file or text
-Response: Extracted skills, experience, education
+- **Sample Response (201)**
+```json
+{
+  "status": "success",
+  "batch_id": "wf_batch_001",
+  "processed": 1,
+  "failed": 0,
+  "next_poll_url": "https://api.skillforge.com/api/v1/candidates/import/wf_batch_001"
+}
 ```
 
-**Step 2: Skill Assessment**
-```
-POST /api/v1/assessments/create
-Input: Candidate ID, skill categories
-Response: Assessment ID, assessment link
+**Step 2: Skill Assessment Scheduling**
+- **Endpoint:** `POST /api/v1/assessments/create`
+- **Rate Limit:** 1,000 requests/hour (200/hour sandbox)
+- **Webhooks:** `assessment.scheduled`, `assessment.completed`
+- **Sample Request (JSON)**
+```json
+{
+  "candidate_id": "sf_cand_001",
+  "assessment_template_id": "templ_sql_basics",
+  "due_at": "2025-05-20T23:59:59Z",
+  "notify_candidate": true
+}
 ```
 
-**Step 3: Job Matching**
-```
-GET /api/v1/candidates/{id}/matches
-Response: List of matching opportunities with match scores
+**Step 3: Job Matching Retrieval**
+- **Endpoint:** `GET /api/v1/candidates/{candidate_id}/matches`
+- **Rate Limit:** 1,500 requests/hour (cached 5 minutes)
+- **Webhooks:** `matchset.generated` (optional, if webhook subscribed)
+- **Sample cURL**
+```bash
+curl "https://api.skillforge.com/api/v1/candidates/sf_cand_001/matches?type=jobs&limit=10" \
+  -H "Authorization: Bearer <token>"
 ```
 
-**Step 4: Placement Tracking**
-```
-POST /api/v1/placements/record
-Input: Candidate ID, Job ID, placement date
-Response: Placement record, tracking dashboard link
+**Step 4: Placement Recording**
+- **Endpoint:** `POST /api/v1/placements/record`
+- **Rate Limit:** 300 records/hour
+- **Webhooks:** `placement.recorded`, followed by `placement.outcome.updated`
+- **Sample Request (JSON)**
+```json
+{
+  "candidate_id": "sf_cand_001",
+  "job_id": "job-7788",
+  "placement_date": "2025-05-01",
+  "employment_type": "full_time"
+}
 ```
 
 ---
@@ -192,31 +235,67 @@ Response: Placement record, tracking dashboard link
 ### University Integration
 
 **Step 1: Student Import**
-```
-POST /api/v1/users/bulk-import
-Input: Student roster with education program info
-Response: User accounts created, login credentials
+- **Endpoint:** `POST /api/v1/users/bulk-import`
+- **Rate Limit:** 200 requests/day (5,000 users/request)
+- **Webhooks:** `user.bulk_import.completed`
+- **Sample Request (JSON)**
+```json
+{
+  "cohort_id": "spring-analytics",
+  "send_invitations": true,
+  "users": [
+    {
+      "external_id": "student-2001",
+      "first_name": "Dana",
+      "last_name": "Singh",
+      "email": "dana.singh@example.edu"
+    }
+  ]
+}
 ```
 
 **Step 2: Curriculum Mapping**
-```
-POST /api/v1/curriculum/create
-Input: Program courses, learning outcomes
-Response: Curriculum ID with skill framework mapping
+- **Endpoint:** `POST /api/v1/curriculum/create`
+- **Rate Limit:** 60 requests/hour
+- **Webhooks:** `curriculum.mapped`
+- **Sample Request (JSON)**
+```json
+{
+  "program_name": "BS Data Science",
+  "external_id": "program_ds_2025",
+  "courses": [
+    {
+      "code": "DS101",
+      "title": "Intro to Data Science",
+      "learning_outcomes": ["python-basics", "statistics-foundations"]
+    }
+  ]
+}
 ```
 
-**Step 3: Skill Assessments**
-```
-POST /api/v1/assessments/assign-batch
-Input: Cohort ID, assessment type, timing
-Response: Batch assessment ID, student links
+**Step 3: Cohort Assessments**
+- **Endpoint:** `POST /api/v1/assessments/assign-batch`
+- **Rate Limit:** 50 batch requests/hour
+- **Webhooks:** `assessment.batch_completed`
+- **Sample Request (JSON)**
+```json
+{
+  "cohort_id": "spring-analytics",
+  "assessment_template_id": "templ_python_intro",
+  "candidate_ids": ["sf_cand_001", "sf_cand_002"],
+  "window_start": "2025-05-15T12:00:00Z",
+  "window_end": "2025-05-30T23:59:59Z"
+}
 ```
 
 **Step 4: Outcomes Reporting**
-```
-GET /api/v1/reports/outcomes
-Input: Program ID, date range
-Response: Graduate skill development, employment outcomes, ROI metrics
+- **Endpoint:** `GET /api/v1/reports/outcomes`
+- **Rate Limit:** Up to 10 concurrent report jobs (429 thereafter)
+- **Webhooks:** `report.ready` (optional)
+- **Sample cURL**
+```bash
+curl "https://api.skillforge.com/api/v1/reports/outcomes?start_date=2025-01-01&end_date=2025-03-31&group_by=program" \
+  -H "Authorization: Bearer <token>"
 ```
 
 ---
@@ -224,35 +303,65 @@ Response: Graduate skill development, employment outcomes, ROI metrics
 ### Recruitment Firm Integration
 
 **Step 1: Candidate Registration**
-```
-POST /api/v1/candidates/register
-Input: Candidate info, resume
-Response: Candidate profile, verification link
-```
-
-**Step 2: Skill Verification**
-```
-POST /api/v1/assessments/quick-verify
-Input: Candidate ID, required skills
-Response: Skill verification results, badge generation
-```
-
-**Step 3: Job Sync**
-```
-POST /api/v1/jobs/sync
-Input: Job listings with required skills
-Response: Job record IDs for matching
+- **Endpoint:** `POST /api/v1/candidates/register`
+- **Rate Limit:** 600 requests/hour
+- **Webhooks:** `candidate.created`, `import.completed`
+- **Sample Request (JSON)**
+```json
+{
+  "external_id": "recruit-3100",
+  "first_name": "Alex",
+  "last_name": "Green",
+  "email": "alex.green@example.com",
+  "resume_url": "https://files.example.com/alex.pdf"
+}
 ```
 
-**Step 4: Placement Success Tracking**
-```
-POST /api/v1/placements/outcome
-Input: Placement ID, retention status, duration
-Response: Success metrics, quality score
+**Step 2: Quick Skill Verification**
+- **Endpoint:** `POST /api/v1/assessments/quick-verify`
+- **Rate Limit:** 500 requests/hour
+- **Webhooks:** `assessment.quick_verification.completed`
+- **Sample Request (JSON)**
+```json
+{
+  "candidate_id": "sf_cand_3100",
+  "skills": ["Negotiation", "CRM"],
+  "time_limit_minutes": 15
+}
 ```
 
----
+**Step 3: Job Synchronization**
+- **Endpoint:** `POST /api/v1/jobs/sync`
+- **Rate Limit:** 120 requests/hour
+- **Webhooks:** `job.synced`
+- **Sample Request (JSON)**
+```json
+{
+  "sync_id": "agency_sync_2025-05-12",
+  "jobs": [
+    {
+      "external_id": "job-8899",
+      "title": "Sales Operations Manager",
+      "location": "Remote",
+      "required_skills": ["CRM", "Reporting"]
+    }
+  ]
+}
+```
 
+**Step 4: Placement Outcome Tracking**
+- **Endpoint:** `POST /api/v1/placements/outcome`
+- **Rate Limit:** 600 outcome updates/hour
+- **Webhooks:** `placement.outcome.updated`
+- **Sample Request (JSON)**
+```json
+{
+  "placement_id": "plc_2001",
+  "retention_status": "employed",
+  "retention_check_date": "2025-08-01",
+  "notes": "Reached 90-day milestone"
+}
+```
 ## Next Steps for Pilot Programs
 
 ### For Prospective Partners
