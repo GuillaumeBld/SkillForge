@@ -14,10 +14,24 @@
     "test": "jest"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.207.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.207.0",
+    "@opentelemetry/instrumentation-express": "^0.56.0",
+    "@opentelemetry/instrumentation-http": "^0.56.0",
+    "@opentelemetry/resources": "^2.2.0",
+    "@opentelemetry/sdk-metrics": "^2.2.0",
+    "@opentelemetry/sdk-node": "^0.207.0",
+    "@opentelemetry/semantic-conventions": "^1.37.0",
+    "@prisma/client": "^5.16.2",
     "@skillforge/shared": "file:../../packages/shared",
+    "bullmq": "^5.20.1",
     "cors": "^2.8.5",
     "express": "^4.18.3",
-    "morgan": "^1.10.0"
+    "express-rate-limit": "^7.4.0",
+    "ioredis": "^5.4.1",
+    "morgan": "^1.10.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -27,6 +41,7 @@
     "@types/node": "^20.11.30",
     "@types/supertest": "^2.0.16",
     "jest": "^29.7.0",
+    "prisma": "^5.16.2",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.2",

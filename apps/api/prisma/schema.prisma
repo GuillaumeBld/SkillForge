@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String                @id @default(cuid())
+  email             String                @unique
+  passwordHash      String?
+  firstName         String
+  lastName          String
+  phone             String?
+  marketingOptIn    Boolean               @default(false)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  profile           Profile?
+  assessments       Assessment[]
+  notificationPrefs NotificationPreference?
+  resumes           ResumeIngestion[]
+  notifications     Notification[]
+}
+
+model Profile {
+  id             String           @id @default(cuid())
+  userId         String           @unique
+  preferredRoles String[]
+  education      Json?
+  goals          String[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id])
+}
+
+model ResumeIngestion {
+  id                String   @id @default(cuid())
+  userId            String
+  source            String?
+  language          String?
+  state             String   @default("queued")
+  ingestionMetadata Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
+}
+
+model AssessmentTemplate {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  description String?
+  deliveryMode String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  assessments Assessment[]
+}
+
+model Assessment {
+  id              String              @id @default(cuid())
+  userId          String
+  templateId      String
+  status          String              @default("scheduled")
+  dueAt           DateTime?
+  notifyUser      Boolean             @default(true)
+  score           Float?
+  responses       Json?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  user            User                @relation(fields: [userId], references: [id])
+  template        AssessmentTemplate  @relation(fields: [templateId], references: [id])
+}
+
+model Occupation {
+  id                     String   @id @default(cuid())
+  onetCode               String   @unique
+  socCode                String?
+  title                  String
+  description            String?
+  alternativeTitles      String[]
+  tasks                  String[]
+  workContext            Json?
+  medianWage             Decimal? @db.Decimal(10, 2)
+  wage10thPercentile     Decimal? @db.Decimal(10, 2)
+  wage90thPercentile     Decimal? @db.Decimal(10, 2)
+  annualOpenings         Int?
+  jobOutlookPercent      Decimal? @db.Decimal(5, 2)
+  educationLevel         String?
+  typicalEntryEducation  String?
+  workExperience         String?
+  relatedOccupations     String[]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  occupationSkills       OccupationSkill[]
+}
+
+model Skill {
+  id             String            @id @default(cuid())
+  code           String?           @unique
+  name           String
+  description    String?
+  category       String?
+  difficulty     Int?
+  relatedSkills  String[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  occupationLink OccupationSkill[]
+}
+
+model OccupationSkill {
+  occupationId     String
+  skillId          String
+  importanceLevel  Int?
+  proficiencyLevel Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  occupation       Occupation @relation(fields: [occupationId], references: [id])
+  skill            Skill       @relation(fields: [skillId], references: [id])
+
+  @@id([occupationId, skillId])
+  @@index([occupationId])
+  @@index([skillId])
+}
+
+model NotificationPreference {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  channels     Json?
+  quietHours   Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id           String   @id @default(cuid())
+  userId       String
+  category     String
+  message      String
+  channel      String
+  status       String   @default("unread")
+  deliveredAt  DateTime?
+  actions      Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
