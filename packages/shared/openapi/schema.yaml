@@ -38,30 +38,402 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - status
-                  - message
-                properties:
-                  status:
-                    type: string
-                    example: error
-                  message:
-                    type: string
-                    example: Invalid health check request
+                $ref: '#/components/schemas/ErrorResponse'
         '503':
           description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/candidates/import:
+    post:
+      operationId: postCandidateImport
+      summary: Bulk import partner candidates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - candidates
+              properties:
+                batch_id:
+                  type: string
+                webhook_url:
+                  type: string
+                  format: uri
+                candidates:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required:
+                      - external_id
+                      - name
+                      - email
+                    properties:
+                      external_id:
+                        type: string
+                      name:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      resume_url:
+                        type: string
+                        format: uri
+                      base64_content:
+                        type: string
+                      metadata:
+                        type: object
+                        additionalProperties: true
+      responses:
+        '201':
+          description: Bulk import accepted
           content:
             application/json:
               schema:
                 type: object
                 required:
                   - status
-                  - message
+                  - batch_id
+                  - processed
+                  - failed
+                  - results
+                  - next_poll_url
                 properties:
                   status:
                     type: string
-                    example: unavailable
-                  message:
+                    example: success
+                  batch_id:
                     type: string
-                    example: API is temporarily unavailable
+                  processed:
+                    type: integer
+                  failed:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - external_id
+                        - status
+                        - webhook_delivery
+                      properties:
+                        external_id:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                            - processed
+                            - failed
+                        candidate_id:
+                          type: string
+                        jaat_vector_version:
+                          type: string
+                        webhook_delivery:
+                          type: string
+                          example: pending
+                        error:
+                          type: string
+                  next_poll_url:
+                    type: string
+                    format: uri
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/candidates/import/{batchId}:
+    get:
+      operationId: getCandidateImportBatch
+      summary: Retrieve candidate batch status
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch status payload
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - batch
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  batch:
+                    $ref: '#/components/schemas/CandidateBatch'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/assessments/create:
+    post:
+      operationId: postAssessmentCreate
+      summary: Schedule an individual assessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessmentRequest'
+      responses:
+        '201':
+          description: Assessment scheduled
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - assessment_id
+                  - launch_url
+                  - webhook_delivery
+                properties:
+                  status:
+                    type: string
+                    example: scheduled
+                  assessment_id:
+                    type: string
+                  launch_url:
+                    type: string
+                    format: uri
+                  webhook_delivery:
+                    type: string
+                    example: assessment.scheduled
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/assessments/assign-batch:
+    post:
+      operationId: postAssessmentAssignBatch
+      summary: Assign assessments to a cohort
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchAssessmentRequest'
+      responses:
+        '202':
+          description: Batch queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - batch_id
+                  - queued
+                  - estimated_completion_seconds
+                properties:
+                  status:
+                    type: string
+                    example: processing
+                  batch_id:
+                    type: string
+                  queued:
+                    type: integer
+                  estimated_completion_seconds:
+                    type: integer
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/placements/record:
+    post:
+      operationId: postPlacementRecord
+      summary: Record a candidate placement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlacementRequest'
+      responses:
+        '201':
+          description: Placement recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - placement_id
+                  - dashboard_url
+                properties:
+                  status:
+                    type: string
+                    example: recorded
+                  placement_id:
+                    type: string
+                  dashboard_url:
+                    type: string
+                    format: uri
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+    CandidateBatch:
+      type: object
+      required:
+        - id
+        - partnerId
+        - environment
+        - processed
+        - failed
+        - results
+        - createdAt
+      properties:
+        id:
+          type: string
+        partnerId:
+          type: string
+        environment:
+          type: string
+        webhookUrl:
+          type: string
+        processed:
+          type: integer
+        failed:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            required:
+              - external_id
+              - status
+            properties:
+              external_id:
+                type: string
+              status:
+                type: string
+                enum:
+                  - processed
+                  - failed
+              candidate_id:
+                type: string
+              jaat_vector_version:
+                type: string
+              error:
+                type: string
+        createdAt:
+          type: string
+          format: date-time
+    AssessmentRequest:
+      type: object
+      required:
+        - candidate_id
+        - assessment_template_id
+        - delivery_mode
+      properties:
+        candidate_id:
+          type: string
+        assessment_template_id:
+          type: string
+        delivery_mode:
+          type: string
+          enum:
+            - synchronous
+            - asynchronous
+        due_at:
+          type: string
+          format: date-time
+        notify_candidate:
+          type: boolean
+    BatchAssessmentRequest:
+      type: object
+      required:
+        - cohort_id
+        - assessment_template_id
+        - candidate_ids
+      properties:
+        cohort_id:
+          type: string
+        assessment_template_id:
+          type: string
+        candidate_ids:
+          type: array
+          items:
+            type: string
+        window_start:
+          type: string
+          format: date-time
+        window_end:
+          type: string
+          format: date-time
+    PlacementRequest:
+      type: object
+      required:
+        - candidate_id
+        - job_id
+        - employer_name
+        - placement_date
+        - employment_type
+      properties:
+        candidate_id:
+          type: string
+        job_id:
+          type: string
+        employer_name:
+          type: string
+        placement_date:
+          type: string
+        employment_type:
+          type: string
