@@ -253,7 +253,7 @@ GET    /api/v1/career-plans/:id
 ### Availability & Capacity Planning
 
 - **SLA**: 99.5% monthly uptime for user-facing APIs, 99.9% for authentication and session validation services.
-- **RTO/RPO**: Recovery time objective of 4 hours, recovery point objective of 15 minutes via point-in-time restore.
+- **RTO/RPO**: Recovery time objective of 30 minutes, recovery point objective of 15 minutes via point-in-time restore.
 - **Capacity Assumptions**: Sized for 250k monthly active users, 20k daily actives, and 5k concurrent sessions during virtual events. Redis cache sized for top 10k occupations and assessments; PostgreSQL provisioned with read replicas for ≥3x expected read traffic.
 - **Scaling Strategy**: Auto-scale API pods at 60% CPU or 70% memory utilization; search index scaled separately with warm standby nodes.
 
