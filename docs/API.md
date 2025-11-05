@@ -3,6 +3,8 @@
 ## 1. Overview
 SkillForge provides RESTful APIs that connect learners, workforce partners, and employers to skill intelligence derived from the JAAT toolkit, O*NET taxonomy, and complementary labor market datasets documented in [docs/SOURCES.md](SOURCES.md). The service exposes onboarding, resume analysis, assessment management, matching, dashboards, notifications, reporting, and partner workflows.
 
+> Latest OpenAPI: [docs/api/openapi.yaml](api/openapi.yaml)
+
 - **Base URL:** `https://api.skillforge.com`
 - **Versioning:** All endpoints are prefixed with `/api/v1/`. Breaking changes introduce a new version prefix.
 - **Formats:** Requests and responses use JSON unless otherwise noted. File uploads support `multipart/form-data`.
