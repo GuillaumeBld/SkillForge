@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info:
+  title: SkillForge API
+  version: 0.1.0
+  description: Baseline API definition for SkillForge platform services.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: https://api.skillforge.local
+    description: Local development gateway
+paths:
+  /api/v1/health:
+    get:
+      operationId: getHealth
+      summary: Retrieve API health information
+      responses:
+        '200':
+          description: Service health response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - timestamp
+                properties:
+                  status:
+                    type: string
+                    description: Service status indicator
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: ISO timestamp for the heartbeat check
+        '400':
+          description: Invalid request context
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - message
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Invalid health check request
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - message
+                properties:
+                  status:
+                    type: string
+                    example: unavailable
+                  message:
+                    type: string
+                    example: API is temporarily unavailable

@@ -1,0 +1,27 @@
+{
+  "name": "@skillforge/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "openapi"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "openapi:generate": "openapi-typescript openapi/schema.yaml --output src/openapi-types.ts",
+    "validate": "openapi lint openapi/schema.yaml"
+  },
+  "devDependencies": {
+    "@redocly/openapi-cli": "^1.0.0-beta.95",
+    "openapi-typescript": "^6.5.0",
+    "typescript": "5.5.4",
+    "vitest": "^1.3.1"
+  }
+}
