@@ -3,24 +3,87 @@
  * Do not make direct changes to the file.
  */
 
-
 export interface paths {
   "/api/v1/health": {
     /** Retrieve API health information */
     get: operations["getHealth"];
   };
+  "/api/v1/candidates/import": {
+    /** Bulk import partner candidates */
+    post: operations["postCandidateImport"];
+  };
+  "/api/v1/candidates/import/{batchId}": {
+    /** Retrieve candidate batch status */
+    get: operations["getCandidateImportBatch"];
+  };
+  "/api/v1/assessments/create": {
+    /** Schedule an individual assessment */
+    post: operations["postAssessmentCreate"];
+  };
+  "/api/v1/assessments/assign-batch": {
+    /** Assign assessments to a cohort */
+    post: operations["postAssessmentAssignBatch"];
+  };
+  "/api/v1/placements/record": {
+    /** Record a candidate placement */
+    post: operations["postPlacementRecord"];
+  };
 }
 
 export type webhooks = Record<string, never>;
 
-export type components = Record<string, never>;
+export interface components {
+  schemas: {
+    ErrorResponse: {
+      /** @example error */
+      status: string;
+      message: string;
+    };
+    CandidateBatch: {
+      id: string;
+      partnerId: string;
+      environment: string;
+      webhookUrl?: string;
+      processed: number;
+      failed: number;
+      results: Array<{
+        external_id: string;
+        status: "processed" | "failed";
+        candidate_id?: string;
+        jaat_vector_version?: string;
+        error?: string;
+      }>;
+      createdAt: string;
+    };
+    AssessmentRequest: {
+      candidate_id: string;
+      assessment_template_id: string;
+      delivery_mode: "synchronous" | "asynchronous";
+      due_at?: string;
+      notify_candidate?: boolean;
+    };
+    BatchAssessmentRequest: {
+      cohort_id: string;
+      assessment_template_id: string;
+      candidate_ids: string[];
+      window_start?: string;
+      window_end?: string;
+    };
+    PlacementRequest: {
+      candidate_id: string;
+      job_id: string;
+      employer_name: string;
+      placement_date: string;
+      employment_type: string;
+    };
+  };
+}
 
 export type $defs = Record<string, never>;
 
 export type external = Record<string, never>;
 
 export interface operations {
-
   /** Retrieve API health information */
   getHealth: {
     responses: {
@@ -44,23 +107,189 @@ export interface operations {
       /** @description Invalid request context */
       400: {
         content: {
-          "application/json": {
-            /** @example error */
-            status: string;
-            /** @example Invalid health check request */
-            message: string;
-          };
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
       /** @description Service unavailable */
       503: {
         content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  /** Bulk import partner candidates */
+  postCandidateImport: {
+    requestBody: {
+      content: {
+        "application/json": {
+          batch_id?: string;
+          webhook_url?: string;
+          candidates: Array<{
+            external_id: string;
+            name: string;
+            email: string;
+            resume_url?: string;
+            base64_content?: string;
+            metadata?: Record<string, unknown>;
+          }>;
+        };
+      };
+    };
+    responses: {
+      /** @description Bulk import accepted */
+      201: {
+        content: {
           "application/json": {
-            /** @example unavailable */
             status: string;
-            /** @example API is temporarily unavailable */
-            message: string;
+            batch_id: string;
+            processed: number;
+            failed: number;
+            results: Array<{
+              external_id: string;
+              status: "processed" | "failed";
+              candidate_id?: string;
+              jaat_vector_version?: string;
+              webhook_delivery: string;
+              error?: string;
+            }>;
+            next_poll_url: string;
           };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  /** Retrieve candidate batch status */
+  getCandidateImportBatch: {
+    parameters: {
+      path: {
+        batchId: string;
+      };
+    };
+    responses: {
+      /** @description Batch status payload */
+      200: {
+        content: {
+          "application/json": {
+            status: string;
+            batch: components["schemas"]["CandidateBatch"];
+          };
+        };
+      };
+      /** @description Batch not found */
+      404: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  /** Schedule an individual assessment */
+  postAssessmentCreate: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AssessmentRequest"];
+      };
+    };
+    responses: {
+      /** @description Assessment scheduled */
+      201: {
+        content: {
+          "application/json": {
+            status: string;
+            assessment_id: string;
+            launch_url: string;
+            webhook_delivery: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  /** Assign assessments to a cohort */
+  postAssessmentAssignBatch: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchAssessmentRequest"];
+      };
+    };
+    responses: {
+      /** @description Batch queued */
+      202: {
+        content: {
+          "application/json": {
+            status: string;
+            batch_id: string;
+            queued: number;
+            estimated_completion_seconds: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  /** Record a candidate placement */
+  postPlacementRecord: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PlacementRequest"];
+      };
+    };
+    responses: {
+      /** @description Placement recorded */
+      201: {
+        content: {
+          "application/json": {
+            status: string;
+            placement_id: string;
+            dashboard_url: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };
