@@ -234,3 +234,61 @@ GET    /api/v1/career-plans/:id
 - **CDN**: Serve static assets via CDN (CloudFront, Cloudflare)
 - **Async Processing**: Use message queues (RabbitMQ, SQS) for heavy computations
 - **Load Balancing**: Distribute traffic across multiple server instances
+
+## Non-Functional Requirements
+
+### Performance Targets
+
+- **Authentication Endpoints** (`POST /api/v1/auth/login`, `POST /api/v1/auth/register`):
+  - P95 latency ≤ 250 ms under normal load, ≤ 400 ms under peak load.
+  - Sustain 200 requests per second (RPS) aggregated across regions with burst tolerance to 400 RPS for 1 minute.
+- **Occupational Search** (`GET /api/v1/occupations`, `GET /api/v1/skills`):
+  - P95 latency ≤ 350 ms with autocomplete results capped at 25 items.
+  - Handle 150 RPS sustained, burst to 300 RPS during marketing campaigns.
+- **Career Recommendations** (`GET /api/v1/recommendations`, `POST /api/v1/assessments`):
+  - P95 latency ≤ 750 ms accounting for scoring and enrichment jobs.
+  - Throughput sized for 75 concurrent assessment submissions with queue-based spillover < 2 seconds.
+- Frontend Time to Interactive target ≤ 3.5 s on mid-range mobile over 4G per Lighthouse.
+
+### Availability & Capacity Planning
+
+- **SLA**: 99.5% monthly uptime for user-facing APIs, 99.9% for authentication and session validation services.
+- **RTO/RPO**: Recovery time objective of 4 hours, recovery point objective of 15 minutes via point-in-time restore.
+- **Capacity Assumptions**: Sized for 250k monthly active users, 20k daily actives, and 5k concurrent sessions during virtual events. Redis cache sized for top 10k occupations and assessments; PostgreSQL provisioned with read replicas for ≥3x expected read traffic.
+- **Scaling Strategy**: Auto-scale API pods at 60% CPU or 70% memory utilization; search index scaled separately with warm standby nodes.
+
+### Security & Privacy Requirements
+
+- Enforce TLS 1.2+ everywhere; HSTS enabled on web properties.
+- All PII, assessment responses, and advisor notes encrypted at rest (AES-256) and in transit, aligning with GDPR and CCPA commitments documented across API and data specifications.
+- Role-based access control aligned with SOC 2 controls; privileged operations gated by multi-factor admin workflows.
+- Data minimization: Collect only data enumerated in `docs/DATA.md`, with annual privacy impact assessments.
+- Maintain audit trails for access to user profiles, exportable for regulatory inquiries.
+
+### Accessibility Commitments
+
+- WCAG 2.1 AA compliance for all user flows, including keyboard navigation, ARIA landmarks, color contrast ≥ 4.5:1, captioning for multimedia content, and alternative text for skill visualizations.
+- Quarterly accessibility audits with assistive technology testing (NVDA, VoiceOver) on representative scenarios (assessment completion, viewing recommendations).
+
+### Observability Standards
+
+- Centralized logging with correlation IDs across frontend, API gateway, and downstream services.
+- Metrics: request latency, error rates, cache hit ratios, queue depth, and database slow query logs exported to the monitoring stack (Prometheus/DataDog).
+- Distributed tracing via OpenTelemetry with sampling ≥ 20% for recommendation workflows.
+- Alerting thresholds: error rate > 1% over 5 minutes, latency SLA breaches, queue depth > 500 pending jobs.
+
+### Resilience, Backup, and Data Retention
+
+- Nightly encrypted backups of PostgreSQL with weekly integrity checks; Redis snapshots every 15 minutes for session continuity.
+- Disaster recovery runbooks tested bi-annually, including restoration of O*NET data pipelines.
+- Data retention policies honoring GDPR/CCPA: PII retained for 24 months post last activity, anonymized aggregates retained indefinitely for analytics, deletion workflows respecting right-to-erasure commitments in `docs/DATA.md`.
+- Partner data exchange logs retained for 13 months to meet SOC 2 audit windows.
+
+### Verification & Validation
+
+- **Load & Stress Testing**: Gatling/K6 suites executed before major releases to validate latency and throughput targets under projected peak loads.
+- **Chaos & Failover Drills**: Quarterly game days to verify auto-scaling, failover to read replicas, and cache warming strategies.
+- **Security & Privacy Audits**: Annual third-party SOC 2 Type II and GDPR readiness assessments, quarterly vulnerability scanning, and penetration tests after significant architectural changes.
+- **Accessibility Testing**: Automated axe-core scans in CI with manual screen-reader testing per release train.
+- **Monitoring & Alerting**: Synthetic uptime checks for SLA enforcement, alert routing validated monthly, and on-call runbooks exercised during post-incident reviews.
+- **Backup Verification**: Monthly restore drills into isolated environments to verify RTO/RPO metrics and data integrity.
