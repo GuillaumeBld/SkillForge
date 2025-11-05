@@ -1,0 +1,1817 @@
+openapi: 3.0.3
+info:
+  title: SkillForge API
+  version: 1.0.0
+  description: |
+    This specification captures the SkillForge REST API described in docs/API.md. It includes
+    learner, partner, and reporting endpoints that leverage JAAT-derived skill intelligence,
+    NLx job data, and O*NET mappings.
+servers:
+  - url: https://api.skillforge.com/api/v1
+    description: Production environment
+  - url: https://sandbox.api.skillforge.com/api/v1
+    description: Sandbox environment with synthetic JAAT vectors
+tags:
+  - name: onboarding
+    description: Learner onboarding and profile completion flows.
+  - name: assessments
+    description: JAAT-informed assessment scheduling and management.
+  - name: matching
+    description: Personalized job, course, and mentor recommendations.
+  - name: notifications
+    description: Notification retrieval and preference management.
+  - name: reporting
+    description: Individual and organizational insights and reports.
+  - name: partner-workflows
+    description: Partner automation covering imports, placements, curriculum mapping, and security.
+  - name: authentication
+    description: Token management for SkillForge APIs.
+  - name: jaat-data
+    description: Direct access to JAAT feature vectors and enumerations.
+paths:
+  /auth/token:
+    post:
+      tags: [authentication]
+      summary: Request an access token
+      description: Obtain OAuth2 access tokens using authorization code, password, or client credentials grants.
+      operationId: createToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /auth/refresh:
+    post:
+      tags: [authentication]
+      summary: Refresh an access token
+      description: Rotate refresh tokens to obtain a new access token without re-authentication.
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /auth/partner:
+    post:
+      tags: [authentication, partner-workflows]
+      summary: Exchange partner credentials for a bearer token
+      description: Authenticate partners using API key and secret to receive scoped bearer tokens.
+      operationId: createPartnerToken
+      parameters:
+        - $ref: '#/components/parameters/ApiKeyHeader'
+        - $ref: '#/components/parameters/ApiSecretHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerTokenRequest'
+      responses:
+        '200':
+          description: Partner token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerTokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /users:
+    post:
+      tags: [onboarding]
+      summary: Create a learner profile
+      description: Onboard a new learner profile and capture baseline goals and preferences.
+      operationId: createUser
+      parameters:
+        - $ref: '#/components/parameters/InviteCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: Learner created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreateResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+      security:
+        - OAuth2: [users.write]
+  /users/{user_id}/resumes:
+    post:
+      tags: [onboarding]
+      summary: Upload or import a resume for a learner
+      description: Accepts resume files for parsing with JAAT-informed NLP.
+      operationId: uploadResume
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResumeUploadRequest'
+      responses:
+        '202':
+          description: Resume queued for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResumeUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - OAuth2: [resumes.write]
+  /users/{user_id}/resumes/{resume_id}:
+    get:
+      tags: [onboarding]
+      summary: Retrieve resume processing status
+      operationId: getResumeStatus
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/ResumeId'
+        - $ref: '#/components/parameters/IncludeVectors'
+      responses:
+        '200':
+          description: Resume status with optional skill vectors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResumeStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - OAuth2: [resumes.write]
+  /users/{user_id}/assessments:
+    get:
+      tags: [assessments]
+      summary: List assessments assigned to a learner
+      operationId: listUserAssessments
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/AssessmentStatus'
+        - $ref: '#/components/parameters/PaginationCursor'
+        - $ref: '#/components/parameters/PaginationLimit'
+      responses:
+        '200':
+          description: Paginated list of assessments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - OAuth2: [assessments.manage]
+    post:
+      tags: [assessments]
+      summary: Schedule an assessment for a learner
+      operationId: createUserAssessment
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessmentCreateRequest'
+      responses:
+        '201':
+          description: Assessment scheduled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentCreateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      security:
+        - OAuth2: [assessments.manage]
+  /users/{user_id}/assessments/{assessment_id}:
+    patch:
+      tags: [assessments]
+      summary: Update assessment attributes
+      operationId: updateUserAssessment
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/AssessmentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessmentUpdateRequest'
+      responses:
+        '200':
+          description: Assessment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentCreateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - OAuth2: [assessments.manage]
+  /users/{user_id}/matches:
+    get:
+      tags: [matching]
+      summary: Retrieve personalized matches for a learner
+      operationId: listUserMatches
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/MatchType'
+        - $ref: '#/components/parameters/PaginationCursor'
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/IncludeJaatDebug'
+      responses:
+        '200':
+          description: Paginated match recommendations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security:
+        - OAuth2: [matching.read]
+  /users/{user_id}/dashboard:
+    get:
+      tags: [reporting]
+      summary: Retrieve learner dashboard sections
+      operationId: getUserDashboard
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/DashboardSections'
+        - $ref: '#/components/parameters/RefreshFlag'
+      responses:
+        '200':
+          description: Dashboard sections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - OAuth2: [users.read]
+  /users/{user_id}/notifications:
+    get:
+      tags: [notifications]
+      summary: List notifications for a learner
+      operationId: listNotifications
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/NotificationChannel'
+        - $ref: '#/components/parameters/NotificationStatus'
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationCursor'
+      responses:
+        '200':
+          description: Paginated notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - OAuth2: [notifications.manage]
+  /users/{user_id}/notifications/{notification_id}:
+    patch:
+      tags: [notifications]
+      summary: Update a notification
+      operationId: updateNotification
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/NotificationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationUpdateRequest'
+      responses:
+        '200':
+          description: Notification updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResource'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - OAuth2: [notifications.manage]
+  /users/{user_id}/notification-preferences:
+    put:
+      tags: [notifications]
+      summary: Replace notification preferences for a learner
+      operationId: upsertNotificationPreferences
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferencesRequest'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      security:
+        - OAuth2: [notifications.manage]
+  /users/{user_id}/reports/progress:
+    get:
+      tags: [reporting]
+      summary: Retrieve learner progress report
+      operationId: getUserProgressReport
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/ReportStartDate'
+        - $ref: '#/components/parameters/ReportEndDate'
+        - $ref: '#/components/parameters/ReportFormat'
+        - $ref: '#/components/parameters/IncludeBenchmarks'
+      responses:
+        '200':
+          description: Learner progress report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProgressReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - OAuth2: [reports.read]
+  /jaat-data:
+    get:
+      tags: [jaat-data]
+      summary: Fetch JAAT data for a learner
+      operationId: getJaatData
+      parameters:
+        - $ref: '#/components/parameters/UserIdQuery'
+      responses:
+        '200':
+          description: JAAT feature weights for the learner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JaatDataResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - OAuth2: [matching.read]
+  /candidates/import:
+    post:
+      tags: [partner-workflows, onboarding]
+      summary: Bulk import candidate resumes
+      operationId: importCandidates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateImportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CandidateImportMultipartRequest'
+      responses:
+        '201':
+          description: Import batch accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateImportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      security:
+        - OAuth2: [partners.admin]
+  /users/bulk-import:
+    post:
+      tags: [partner-workflows, onboarding]
+      summary: Bulk import learner accounts
+      operationId: bulkImportUsers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserBulkImportRequest'
+      responses:
+        '202':
+          description: Bulk user import queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserBulkImportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+        - OAuth2: [partners.admin]
+  /candidates/register:
+    post:
+      tags: [partner-workflows, onboarding]
+      summary: Register an individual candidate
+      operationId: registerCandidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateCreateRequest'
+      responses:
+        '201':
+          description: Candidate registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateCreateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      security:
+        - OAuth2: [partners.admin]
+  /candidates/{candidate_id}/matches:
+    get:
+      tags: [partner-workflows, matching]
+      summary: Retrieve matches for a partner candidate
+      operationId: listCandidateMatches
+      parameters:
+        - $ref: '#/components/parameters/CandidateId'
+        - $ref: '#/components/parameters/MatchType'
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationCursor'
+        - $ref: '#/components/parameters/IncludePartnerTags'
+      responses:
+        '200':
+          description: Paginated candidate matches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateMatchListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+        - OAuth2: [partners.admin]
+  /assessments/create:
+    post:
+      tags: [partner-workflows, assessments]
+      summary: Schedule an assessment for a partner candidate
+      operationId: partnerCreateAssessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerAssessmentCreateRequest'
+      responses:
+        '201':
+          description: Assessment scheduled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerAssessmentCreateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+        - OAuth2: [partners.admin]
+  /assessments/assign-batch:
+    post:
+      tags: [partner-workflows, assessments]
+      summary: Queue a batch assessment assignment
+      operationId: assignBatchAssessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchAssessmentRequest'
+      responses:
+        '202':
+          description: Batch queued for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAssessmentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+        - OAuth2: [partners.admin]
+  /assessments/quick-verify:
+    post:
+      tags: [partner-workflows, assessments]
+      summary: Launch a quick verification assessment
+      operationId: quickVerifyAssessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickVerifyAssessmentRequest'
+      responses:
+        '200':
+          description: Quick verify assessment started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuickVerifyAssessmentResponse'
+      security:
+        - OAuth2: [partners.admin]
+  /jobs/sync:
+    post:
+      tags: [partner-workflows, matching]
+      summary: Synchronize job requisitions
+      operationId: syncJobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobSyncRequest'
+      responses:
+        '200':
+          description: Job sync accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSyncResponse'
+      security:
+        - OAuth2: [partners.admin]
+  /placements/record:
+    post:
+      tags: [partner-workflows, reporting]
+      summary: Record a placement for a candidate
+      operationId: recordPlacement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlacementRecordRequest'
+      responses:
+        '201':
+          description: Placement recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlacementRecordResponse'
+      security:
+        - OAuth2: [partners.admin]
+  /placements/outcome:
+    post:
+      tags: [partner-workflows, reporting]
+      summary: Update placement outcomes
+      operationId: updatePlacementOutcome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlacementOutcomeRequest'
+      responses:
+        '200':
+          description: Placement outcome updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlacementOutcomeResponse'
+      security:
+        - OAuth2: [partners.admin]
+  /curriculum/create:
+    post:
+      tags: [partner-workflows]
+      summary: Map partner curriculum to SkillForge skills
+      operationId: createCurriculum
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CurriculumCreateRequest'
+      responses:
+        '201':
+          description: Curriculum mapped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurriculumCreateResponse'
+      security:
+        - OAuth2: [partners.admin]
+  /reports/outcomes:
+    get:
+      tags: [partner-workflows, reporting]
+      summary: Retrieve organizational outcome reports
+      operationId: getOrganizationOutcomes
+      parameters:
+        - $ref: '#/components/parameters/ReportStartDate'
+        - $ref: '#/components/parameters/ReportEndDate'
+        - $ref: '#/components/parameters/GroupBy'
+        - $ref: '#/components/parameters/ReportFormat'
+        - $ref: '#/components/parameters/IncludePii'
+        - $ref: '#/components/parameters/IncludeJaatVectors'
+      responses:
+        '200':
+          description: Organizational outcomes report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationReportResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security:
+        - OAuth2: [reports.read, partners.admin]
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.skillforge.com/api/v1/auth/token
+          scopes:
+            users.read: Read onboarding and dashboard data.
+            users.write: Create or update onboarding records.
+            resumes.write: Upload and manage resumes.
+            assessments.manage: Schedule and update assessments.
+            matching.read: Retrieve recommendation results.
+            notifications.manage: Manage notifications and preferences.
+            reports.read: Access learner and organizational reports.
+            partners.admin: Execute partner workflows and bulk operations.
+        authorizationCode:
+          authorizationUrl: https://api.skillforge.com/oauth/authorize
+          tokenUrl: https://api.skillforge.com/api/v1/auth/token
+          scopes:
+            users.read: Read onboarding and dashboard data.
+            users.write: Create or update onboarding records.
+            resumes.write: Upload and manage resumes.
+            assessments.manage: Schedule and update assessments.
+            matching.read: Retrieve recommendation results.
+            notifications.manage: Manage notifications and preferences.
+            reports.read: Access learner and organizational reports.
+            partners.admin: Execute partner workflows and bulk operations.
+    PartnerWebhookSignature:
+      type: apiKey
+      in: header
+      name: X-SkillForge-Signature
+      description: HMAC-SHA256 signature for webhook validation.
+  parameters:
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique identifier for the learner user.
+    ResumeId:
+      name: resume_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique resume identifier.
+    IncludeVectors:
+      name: include_vectors
+      in: query
+      schema:
+        type: boolean
+      description: Include processed JAAT skill vectors in the response.
+    AssessmentId:
+      name: assessment_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique assessment identifier.
+    AssessmentStatus:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [queued, in_progress, completed]
+      description: Filter assessments by processing status.
+    MatchType:
+      name: type
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/MatchType'
+      description: Type of recommendation to return.
+    PaginationCursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+      description: Cursor token for pagination.
+    PaginationLimit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Maximum number of records to return.
+    DashboardSections:
+      name: sections
+      in: query
+      schema:
+        type: string
+        description: Comma-delimited subset of dashboard sections.
+      description: Restrict dashboard response to specific sections.
+    RefreshFlag:
+      name: refresh
+      in: query
+      schema:
+        type: boolean
+      description: Force regeneration of dashboard data.
+    NotificationChannel:
+      name: channel
+      in: query
+      schema:
+        $ref: '#/components/schemas/NotificationChannel'
+      description: Filter notifications by delivery channel.
+    NotificationStatus:
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/NotificationStatus'
+      description: Filter notifications by read status.
+    NotificationId:
+      name: notification_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique notification identifier.
+    InviteCode:
+      name: invite_code
+      in: query
+      schema:
+        type: string
+      description: Invitation code required for certain cohorts.
+    ReportStartDate:
+      name: start_date
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      description: Start date for reports.
+    ReportEndDate:
+      name: end_date
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      description: End date for reports.
+    ReportFormat:
+      name: format
+      in: query
+      schema:
+        type: string
+        enum: [json, pdf, csv, xlsx]
+        default: json
+      description: Preferred report output format.
+    IncludeBenchmarks:
+      name: include_benchmarks
+      in: query
+      schema:
+        type: boolean
+      description: Include benchmark comparisons in learner reports.
+    GroupBy:
+      name: group_by
+      in: query
+      schema:
+        type: string
+        enum: [department, location, cohort]
+      description: Grouping dimension for organizational reports.
+    IncludePii:
+      name: include_pii
+      in: query
+      schema:
+        type: boolean
+        default: false
+      description: Include personally identifiable information when permitted.
+    IncludeJaatVectors:
+      name: include_jaat_vectors
+      in: query
+      schema:
+        type: boolean
+      description: Include JAAT vectors in reports.
+    IncludeJaatDebug:
+      name: include_jaat_debug
+      in: query
+      schema:
+        type: boolean
+      description: Surface JAAT feature weights for analysts.
+    IncludePartnerTags:
+      name: include_partner_tags
+      in: query
+      schema:
+        type: boolean
+      description: Include partner-specific filtering flags in candidate matches.
+    ApiKeyHeader:
+      name: X-API-Key
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Partner API key.
+    ApiSecretHeader:
+      name: X-API-Secret
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Partner API secret.
+    CandidateId:
+      name: candidate_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique partner candidate identifier.
+    UserIdQuery:
+      name: user_id
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Learner identifier used to retrieve JAAT data.
+  responses:
+    BadRequest:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Authentication required or failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient scope to access the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Resource conflict or duplicate detected
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          description: Time in seconds until next allowed request
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    TokenRequest:
+      type: object
+      required: [grant_type, client_id]
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code, password, client_credentials]
+        client_id:
+          type: string
+        client_secret:
+          type: string
+        code:
+          type: string
+          description: Authorization code for the authorization_code flow.
+        username:
+          type: string
+        password:
+          type: string
+        scope:
+          type: string
+          description: Space-delimited scopes.
+    TokenRefreshRequest:
+      type: object
+      required: [grant_type, refresh_token]
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token]
+        refresh_token:
+          type: string
+        scope:
+          type: string
+          description: Optional scope reduction.
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+        scope:
+          type: string
+    PartnerTokenRequest:
+      type: object
+      required: [partner_id, timestamp]
+      properties:
+        partner_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    PartnerTokenResponse:
+      allOf:
+        - $ref: '#/components/schemas/TokenResponse'
+        - type: object
+          properties:
+            sandbox_expires_in:
+              type: integer
+              description: Time in seconds until sandbox token expiration.
+    UserCreateRequest:
+      type: object
+      required: [first_name, last_name, email]
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        preferred_roles:
+          type: array
+          items:
+            type: string
+        education:
+          type: object
+          properties:
+            highest_level:
+              type: string
+            institution:
+              type: string
+            credential_ids:
+              type: array
+              items:
+                type: string
+        goals:
+          type: array
+          items:
+            type: string
+        marketing_opt_in:
+          type: boolean
+    UserCreateResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        user_id:
+          type: string
+        profile_completion:
+          type: number
+          format: float
+        required_actions:
+          type: array
+          items:
+            type: string
+    ResumeUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        source:
+          type: string
+          enum: [uploaded, linkedin, partner_import]
+        language:
+          type: string
+          description: ISO 639-1 language code.
+    ResumeUploadResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [processing]
+        resume_id:
+          type: string
+        ingestion_state:
+          type: string
+          enum: [queued, processing, completed]
+        estimated_completion_seconds:
+          type: integer
+    ResumeStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        resume_id:
+          type: string
+        ingestion_state:
+          type: string
+          enum: [queued, processing, completed, failed]
+        estimated_completion_seconds:
+          type: integer
+        jaat_vectors:
+          type: object
+          additionalProperties:
+            type: number
+          description: Returned when include_vectors=true.
+    AssessmentCreateRequest:
+      type: object
+      required: [assessment_template_id, delivery_mode]
+      properties:
+        assessment_template_id:
+          type: string
+        delivery_mode:
+          type: string
+          enum: [asynchronous, synchronous]
+        due_at:
+          type: string
+          format: date-time
+        notify_user:
+          type: boolean
+    AssessmentCreateResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [scheduled]
+        assessment_id:
+          type: string
+        launch_url:
+          type: string
+          format: uri
+        skills_benchmarked:
+          type: array
+          items:
+            $ref: '#/components/schemas/BenchmarkedSkill'
+    AssessmentUpdateRequest:
+      type: object
+      properties:
+        due_at:
+          type: string
+          format: date-time
+        notify_user:
+          type: boolean
+    AssessmentListResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/AssessmentResource'
+    AssessmentResource:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, in_progress, completed]
+        template_id:
+          type: string
+        due_at:
+          type: string
+          format: date-time
+    BenchmarkedSkill:
+      type: object
+      properties:
+        skill_name:
+          type: string
+        taxonomy_source:
+          type: string
+        reference:
+          type: string
+    MatchListResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            user_id:
+              type: string
+            type:
+              $ref: '#/components/schemas/MatchType'
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/MatchResource'
+    MatchResource:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        match_score:
+          type: number
+          format: float
+        top_skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchSkill'
+        onet_code:
+          type: string
+        source_reference:
+          type: string
+        partner_tags:
+          type: array
+          items:
+            type: string
+    MatchSkill:
+      type: object
+      properties:
+        name:
+          type: string
+        source:
+          $ref: '#/components/schemas/JaatSource'
+    DashboardResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        sections:
+          type: object
+          additionalProperties:
+            type: object
+        generated_at:
+          type: string
+          format: date-time
+    NotificationListResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            notifications:
+              type: array
+              items:
+                $ref: '#/components/schemas/NotificationResource'
+    NotificationResource:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        message:
+          type: string
+        delivered_at:
+          type: string
+          format: date-time
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationAction'
+    NotificationAction:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [open_url]
+        label:
+          type: string
+        url:
+          type: string
+          format: uri
+    NotificationUpdateRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/NotificationStatus'
+    NotificationPreferencesRequest:
+      type: object
+      properties:
+        channels:
+          type: object
+          additionalProperties:
+            type: boolean
+    NotificationPreferencesResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        channels:
+          type: object
+          additionalProperties:
+            type: boolean
+    UserProgressReport:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        user_id:
+          type: string
+        period:
+          $ref: '#/components/schemas/ReportPeriod'
+        learning_hours:
+          type: integer
+        assessments_completed:
+          type: integer
+        skill_delta:
+          type: object
+          additionalProperties:
+            type: number
+        benchmarks:
+          type: object
+          properties:
+            cohort_percentile:
+              type: number
+            external_reference:
+              type: string
+        download_url:
+          type: string
+          format: uri
+    ReportPeriod:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+    JaatDataResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        jaat_data:
+          type: object
+          properties:
+            vector_version:
+              type: string
+            feature_weights:
+              type: object
+              additionalProperties:
+                type: number
+            source_reference:
+              type: string
+    CandidateImportRequest:
+      type: object
+      properties:
+        batch_id:
+          type: string
+        webhook_url:
+          type: string
+          format: uri
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateImportEntry'
+    CandidateImportEntry:
+      type: object
+      properties:
+        external_id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        resume_url:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    CandidateImportMultipartRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        metadata:
+          type: string
+          description: JSON metadata describing candidates.
+    CandidateImportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        batch_id:
+          type: string
+        processed:
+          type: integer
+        failed:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateImportResult'
+        next_poll_url:
+          type: string
+          format: uri
+    CandidateImportResult:
+      type: object
+      properties:
+        external_id:
+          type: string
+        status:
+          type: string
+        candidate_id:
+          type: string
+        jaat_vector_version:
+          type: string
+        webhook_delivery:
+          type: string
+    CandidateCreateRequest:
+      type: object
+      required: [external_id, first_name, last_name, email]
+      properties:
+        external_id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        resume_url:
+          type: string
+        webhook_url:
+          type: string
+          format: uri
+        tags:
+          type: array
+          items:
+            type: string
+    CandidateCreateResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [created]
+        candidate_id:
+          type: string
+        user_id:
+          type: string
+        onboarding_url:
+          type: string
+          format: uri
+        resume_ingestion_state:
+          type: string
+    UserBulkImportRequest:
+      type: object
+      properties:
+        cohort_id:
+          type: string
+        send_invitations:
+          type: boolean
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserBulkImportEntry'
+    UserBulkImportEntry:
+      type: object
+      required: [external_id, first_name, last_name, email]
+      properties:
+        external_id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: integer
+    UserBulkImportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [processing]
+        batch_id:
+          type: string
+        queued:
+          type: integer
+        invite_status:
+          type: string
+        estimated_completion_seconds:
+          type: integer
+    CandidateMatchListResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            candidate_id:
+              type: string
+            type:
+              $ref: '#/components/schemas/MatchType'
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/MatchResource'
+    PartnerAssessmentCreateRequest:
+      type: object
+      required: [candidate_id, assessment_template_id, delivery_mode]
+      properties:
+        candidate_id:
+          type: string
+        assessment_template_id:
+          type: string
+        delivery_mode:
+          type: string
+        due_at:
+          type: string
+          format: date-time
+        notify_candidate:
+          type: boolean
+    PartnerAssessmentCreateResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [scheduled]
+        assessment_id:
+          type: string
+        launch_url:
+          type: string
+          format: uri
+        webhook_delivery:
+          type: string
+    BatchAssessmentRequest:
+      type: object
+      required: [cohort_id, assessment_template_id, candidate_ids]
+      properties:
+        cohort_id:
+          type: string
+        assessment_template_id:
+          type: string
+        candidate_ids:
+          type: array
+          items:
+            type: string
+        window_start:
+          type: string
+          format: date-time
+        window_end:
+          type: string
+          format: date-time
+    BatchAssessmentResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [processing]
+        batch_id:
+          type: string
+        queued:
+          type: integer
+        estimated_completion_seconds:
+          type: integer
+    QuickVerifyAssessmentRequest:
+      type: object
+      required: [candidate_id, skills]
+      properties:
+        candidate_id:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        time_limit_minutes:
+          type: integer
+    QuickVerifyAssessmentResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [in_progress]
+        assessment_id:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    JobSyncRequest:
+      type: object
+      required: [sync_id, jobs]
+      properties:
+        sync_id:
+          type: string
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobResource'
+    JobResource:
+      type: object
+      required: [external_id, title]
+      properties:
+        external_id:
+          type: string
+        title:
+          type: string
+        location:
+          type: string
+        required_skills:
+          type: array
+          items:
+            type: string
+        nice_to_have_skills:
+          type: array
+          items:
+            type: string
+        published_at:
+          type: string
+          format: date-time
+    JobSyncResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        sync_id:
+          type: string
+        imported:
+          type: integer
+        updated:
+          type: integer
+        skipped:
+          type: integer
+    PlacementRecordRequest:
+      type: object
+      required: [candidate_id, job_id, employer_name, placement_date, employment_type]
+      properties:
+        candidate_id:
+          type: string
+        job_id:
+          type: string
+        employer_name:
+          type: string
+        placement_date:
+          type: string
+          format: date
+        employment_type:
+          type: string
+          enum: [full_time, part_time, contract, temporary, internship]
+    PlacementRecordResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [recorded]
+        placement_id:
+          type: string
+        dashboard_url:
+          type: string
+          format: uri
+    PlacementOutcomeRequest:
+      type: object
+      required: [placement_id, retention_status, retention_check_date]
+      properties:
+        placement_id:
+          type: string
+        retention_status:
+          type: string
+          enum: [employed, separated, unknown]
+        retention_check_date:
+          type: string
+          format: date
+        notes:
+          type: string
+        webhook_url:
+          type: string
+          format: uri
+    PlacementOutcomeResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [updated]
+        quality_score:
+          type: number
+          format: float
+        next_check_in:
+          type: string
+          format: date
+    CurriculumCreateRequest:
+      type: object
+      required: [program_name, external_id, courses]
+      properties:
+        program_name:
+          type: string
+        external_id:
+          type: string
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurriculumCourse'
+    CurriculumCourse:
+      type: object
+      required: [code, title, learning_outcomes]
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        learning_outcomes:
+          type: array
+          items:
+            type: string
+    CurriculumCreateResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [created]
+        curriculum_id:
+          type: string
+        mapped_skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/BenchmarkedSkill'
+    OrganizationReportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        report_id:
+          type: string
+        period:
+          $ref: '#/components/schemas/ReportPeriod'
+        summary:
+          type: object
+          additionalProperties:
+            type: number
+        breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationReportBreakdown'
+        download_url:
+          type: string
+          format: uri
+    OrganizationReportBreakdown:
+      type: object
+      properties:
+        group:
+          type: string
+        candidates:
+          type: integer
+        avg_match:
+          type: number
+          format: float
+        top_skills:
+          type: array
+          items:
+            type: string
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/JaatSource'
+    PaginatedResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        next_cursor:
+          type: string
+          nullable: true
+    ErrorResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+        code:
+          type: string
+        correlation_id:
+          type: string
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+    MatchType:
+      type: string
+      enum: [jobs, courses, mentors]
+    NotificationChannel:
+      type: string
+      enum: [email, sms, in_app]
+    NotificationStatus:
+      type: string
+      enum: [unread, read]
+    JaatSource:
+      type: string
+      enum: [JAAT, 'JAAT Toolkit', 'O*NET Resource Center', Lightcast]
+      description: Enumerated sources for JAAT-derived features and external overlays.
