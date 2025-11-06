@@ -1,6 +1,6 @@
 # SkillForge Launch Readiness Checklist
 
-This document captures the cross-functional gates that must be satisfied before promoting the MVP build of SkillForge to general availability. It should be reviewed in the launch readiness meeting alongside status dashboards in CI/CD and observability tooling. Any item not marked complete blocks launch unless an explicit exception is approved by the accountable owner recorded below.
+This document captures the cross-functional gates that must be satisfied before promoting the MVP build of SkillForge to general availability. It should be reviewed in the launch readiness meeting alongside status dashboards in CI/CD and observability tooling. Any item not marked complete blocks launch unless an explicit exception is approved by the accountable owner recorded below. Role-specific AI agent prompts and skills are cataloged in `docs/AGENT_OPERATING_MODEL.md`.
 
 ## 1. Product & UX Readiness
 - Feature scope for the MVP matches the committed backlog in `docs/FEATURES.md` with no "must-have" items in the `Deferred` column of the roadmap tracker.
