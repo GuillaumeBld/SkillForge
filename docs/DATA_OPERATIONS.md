@@ -1,77 +1,266 @@
-# SkillForge Data Operations Runbook
+# Data Operations Runbook
 
-## 1. Migration Orchestration (Flyway → Prisma)
-1. **Flyway baseline migrations**
-   - Execute database schema migrations first to ensure structural compatibility for downstream ORM layers.
-   - Apply versioned SQL scripts in ascending order; stop on any checksum mismatch and remediate before proceeding.
-   - Critical objects seeded here include foundational tables documented in `docs/DATA.md` such as `occupations`, `skills`, `knowledge_requirements`, `abilities`, and `work_context`.
-2. **Flyway repeatable migrations**
-   - Re-run idempotent scripts (e.g., view refreshes, materialized aggregates) after every release.
-   - Ensure derived tables (e.g., occupation search indices) stay aligned with `occupations` and `skills`.
-3. **Prisma migrations**
-   - Run `prisma migrate deploy` to synchronize Prisma's migration history with the already-applied Flyway schema.
-   - Validate Prisma client generation succeeds and regenerate clients (`prisma generate`) before application deployment.
-4. **Verification checks**
-   - Confirm Prisma introspection reports no drift (`prisma migrate status`).
-   - Run smoke queries against `occupations` and `skills` to confirm read/write paths.
+This runbook tracks routine and emergency operations that touch production data.
+It now covers two major areas:
 
-## 2. Seed Data Strategy
-1. **Baseline occupations and skills**
-   - Populate canonical occupations from the latest O\*NET release into `occupations` with related `skills`, `knowledge_requirements`, `abilities`, and `work_context` mappings.
-   - Use bulk loaders that enforce SOC/O\*NET code uniqueness and maintain foreign key integrity.
-2. **Skill taxonomy enrichment**
-   - Insert crosswalk tables (e.g., `skill_clusters`, `occupation_skill_strength`) after primary occupation loads.
-   - Apply deduplication scripts to normalize skill names before insertion.
-3. **Administrative accounts**
-   - Seed `users` with hashed credentials for platform administrators and data stewards.
-   - Grant roles/permissions covering Flyway/Prisma release management, ETL approvals, and consent revocation overrides.
-4. **Idempotency & auditing**
-   - Wrap seeds in transactions with `ON CONFLICT DO UPDATE` semantics where supported.
-   - Log seed executions in an `etl_run_log` table for traceability.
+- **Compliance worker drills** powered by BullMQ queues under
+  `apps/api/src/workers/`.
+- **O*NET / JAAT dataset management**, including local database setup and
+  Flyway migrations.
 
-## 3. Environment Configuration Population
-- **Development**
-  - Load reduced occupation/skill subsets (top 100) and synthetic users for rapid iteration.
-  - Configure Prisma `.env` with sandbox API keys, mocked JAAT endpoints, and permissive rate limits.
-- **Staging**
-  - Mirror full production schema and seed data; point to staging JAAT/O\*NET buckets.
-  - Enable feature flags for experimental ETL transforms while keeping partner data anonymized.
-- **Production**
-  - Require secret rotation prior to migrations.
-  - Load environment variables via managed secret store (e.g., Vault) and validate checksum of `.env.production` templates before rollout.
+Run commands from the repository root. To execute API workspace tooling, use
+`npm run --workspace @skillforge/api <script> -- <args>` (or
+`npm --prefix apps/api run <script> -- <args>`).
 
-## 4. JAAT & O*NET ETL Operations
-1. **Schedules**
-   - **O\*NET bulk refresh**: monthly (first Sunday, 02:00 UTC) covering `occupations`, `skills`, `knowledge_requirements`, `abilities`, and `work_context` tables documented in `docs/DATA.md`.
-   - **JAAT incremental sync**: weekly (Wednesday, 04:00 UTC) updating `jaat_profiles`, `occupation_summary`, and `related_occupations` link tables.
-2. **Monitoring**
-   - Track ETL health via `etl_run_log` entries (status, duration, row counts).
-   - Emit alerts on SLA breaches (duration > 30 min, row deltas ±5% vs. prior run).
-   - Validate record counts against historical baselines for `occupations` and `skills` using automated anomaly detection jobs.
-3. **Rollback Procedures**
-   - Retain last-two ETL snapshots per source in object storage (partitioned by run timestamp).
-   - To revert:
-     1. Pause downstream consumers.
-     2. Restore snapshot into staging schema (`*_backup` tables).
-     3. Swap partitions or execute `INSERT ... SELECT` from backup into primary tables.
-     4. Rebuild dependent materialized views and search indices.
-   - Document rollback actions in `etl_run_log` with `rollback_of_run_id` metadata.
+## Compliance Worker Drills
 
-## 5. Retention & Anonymization Automation
-- Schedule nightly job to purge personal data older than retention policy (default 365 days) from audit-heavy tables (`user_activity`, `session_events`).
-- Automate anonymization by replacing PII columns with irreversible hashes (SHA-256 + salt) while preserving foreign keys for analytics.
-- Maintain `retention_policy` table controlling dataset-specific schedules; Flyway repeatable migration updates enforce policy changes.
-- Provide dry-run mode emitting diffs to compliance reviewers before execution.
+The CLI entry point lives at `apps/api/src/cli/compliance.ts`. It defaults to a
+dry-run, prints audit-friendly JSON summaries, and can enqueue jobs for
+background processing when Redis is available.
 
-## 6. Consent Revocation Handling
-- Implement listener on consent management service to enqueue revocation events.
-- ETL worker consumes queue, locates subject records via `consent_grants` and cascades deletions/anonymizations across `user_profiles`, `progress_history`, and partner export tables.
-- Log revocation completion with references to affected record IDs and timestamps for auditability.
-- Block future exports by adding user ID to `consent_blocklist` table consulted by partner delivery pipelines.
+Inspect available options:
 
-## 7. Partner-Specific Data Segregation
-- Partition partner deliverables per tenant (`partner_id`) using schema-level separation (e.g., `partner_<id>` schemas) or row-level security policies.
-- Configure export jobs to read from segregated views that enforce partner filters on `occupations`, `skills`, and engagement data.
-- Apply consent-aware filters before export; omit records flagged in `consent_blocklist`.
-- Run quarterly verification ensuring no cross-partner data leakage by sampling exports and comparing hashes.
-- Document partner onboarding tasks: provision schema, seed partner config (`partner_settings`), register API keys, and schedule dedicated monitoring alerts.
+```bash
+npm run --workspace @skillforge/api compliance -- --help
+```
+
+### Consent Revocation
+
+**Purpose:** honour user opt-outs by revoking marketing/notification consent.
+The worker:
+
+- Forces `marketingOptIn` to `false`.
+- Removes any `NotificationPreference` rows.
+- Cancels scheduled/processing assessments and disables future notifications.
+- Archives notifications so downstream channels cease delivery.
+
+**Dry-run example (default):**
+
+```bash
+npm run --workspace @skillforge/api compliance -- consent-revocation \
+  --tenant acme-partners \
+  --dry-run \
+  --triggered-by privacy@skillforge.com \
+  --note "Quarterly consent audit drill"
+```
+
+**Apply immediately for a single user:**
+
+```bash
+npm run --workspace @skillforge/api compliance -- consent-revocation \
+  --user user_123 \
+  --execute \
+  --reason "Customer-requested opt-out 2025-07-15"
+```
+
+**Enqueue for asynchronous processing:**
+
+```bash
+npm run --workspace @skillforge/api compliance -- consent-revocation \
+  --tenant acme-partners \
+  --execute \
+  --queue
+```
+
+**Verification:** Review CLI JSON output and search central logs for entries
+with `job: "consent-revocation"`. Expect `marketingOptIn` disabled, notification
+preferences removed, assessments cancelled, and notifications marked `archived`
+for the scoped users.
+
+### Data Retention Purge
+
+**Purpose:** enforce the 24‑month retention window (GDPR/CCPA). The worker
+deletes notifications, resumes, assessments, notification preferences, and
+profiles before removing the user record.
+
+**Dry-run (default 24 months):**
+
+```bash
+npm run --workspace @skillforge/api compliance -- data-retention \
+  --tenant orbit-labs \
+  --dry-run
+```
+
+**Custom cutoff with execution:**
+
+```bash
+npm run --workspace @skillforge/api compliance -- data-retention \
+  --before 2023-01-01T00:00:00Z \
+  --execute \
+  --triggered-by data.protection@skillforge.com
+```
+
+**Verification:** Inspect the JSON summary (counts per entity) and correlate
+with Postgres audit logs or BullMQ metrics (`queue: data-retention-jobs`) when
+run in production.
+
+### Partner Segregation Alignment
+
+**Purpose:** ensure partner/tenant metadata on resumes and notifications remains
+isolated. The worker normalises `tenantId`/`partnerId` fields inside
+`ResumeIngestion.ingestionMetadata` and `Notification.actions`.
+
+> **Important:** `--tenant` is required. Without it the job records a warning
+> and exits.
+
+**Dry-run metadata scan:**
+
+```bash
+npm run --workspace @skillforge/api compliance -- partner-segregation \
+  --tenant orbit-labs \
+  --dry-run
+```
+
+**Execute and enqueue:**
+
+```bash
+npm run --workspace @skillforge/api compliance -- partner-segregation \
+  --tenant orbit-labs \
+  --execute \
+  --queue
+```
+
+**Verification:** The summary lists `resumeUpdates` and `notificationUpdates`
+counts. When applied, spot-check the associated JSON blobs to confirm
+`tenantId`/`partnerId` values now match the requested tenant.
+
+## O*NET / JAAT Data Seeding
+
+The reference dataset workflow still lives in `ops/scripts/seed-onet-data.py`,
+built around fixtures stored in `ops/fixtures/onet/`.
+
+### Prerequisites
+
+- Python 3.10 or newer.
+- Install dependencies:
+  ```bash
+  pip install "psycopg[binary]>=3.1"
+  ```
+- Network access to the target PostgreSQL instance and credentials that can
+  upsert into the tables documented in `docs/DATA.md`.
+- Configure a connection string via one of:
+  - `SKILLFORGE_<ENV>_DATABASE_URL` (e.g. `SKILLFORGE_LOCAL_DATABASE_URL`)
+  - `DATABASE_URL` or `SKILLFORGE_DATABASE_URL`
+  - The `--dsn` flag when invoking the script directly
+
+If no DSN is supplied, local runs fall back to
+`postgresql://postgres:postgres@localhost:5432/skillforge`.
+
+### Local Database Setup
+
+1. Copy the API environment template:
+   ```bash
+   cp apps/api/.env.example apps/api/.env
+   ```
+2. Start the local PostgreSQL container (matches Prisma `DATABASE_URL`):
+   ```bash
+   docker compose up -d skillforge-db
+   ```
+3. Confirm the container is healthy:
+   ```bash
+   docker compose ps
+   ```
+4. Install API dependencies if needed:
+   ```bash
+   cd apps/api
+   npm install
+   ```
+5. Verify connectivity via Prisma:
+   ```bash
+   npx prisma migrate status
+   ```
+
+#### Tear Down
+
+- Stop the database:
+  ```bash
+  docker compose down
+  ```
+- Remove the persistent volume for a clean slate:
+  ```bash
+  docker compose down -v
+  ```
+
+### Running the Seeder
+
+- Inspect `ops/fixtures/onet/<env>/manifest.json` for the target environment.
+- Update the JSON fixtures (`occupations.json`, `skills.json`,
+  `occupation_skills.json`, `tasks.json`) with the desired dataset.
+- Execute the workspace command:
+  ```bash
+  npm run seed:local       # ops/fixtures/onet/local
+  npm run seed:ci          # ops/fixtures/onet/ci
+  npm run seed:staging     # ops/fixtures/onet/staging
+  npm run seed:production  # ops/fixtures/onet/production
+  ```
+- Validate without writes by appending `-- --dry-run`:
+  ```bash
+  npm run seed:local -- --dry-run
+  ```
+
+All operations run inside a single PostgreSQL transaction. Inserts use
+`ON CONFLICT DO UPDATE`, preserving idempotent behaviour.
+
+### Rollback Expectations
+
+- Failed transactions roll back automatically.
+- To unwind a successful seed, restore from backup or re-run using the previous
+  fixture snapshot.
+- Store fixture JSON in version control for easy reverts.
+
+### Targeting Multiple Environments
+
+- Local fixtures contain development samples; `ci` ships a minimal dataset for
+  pipelines.
+- Staging/production directories default to empty arrays—populate them with the
+  authoritative data exports before seeding.
+- If staging or production databases need different credentials, set the
+  corresponding `SKILLFORGE_<ENV>_DATABASE_URL` (e.g.
+  `export SKILLFORGE_PRODUCTION_DATABASE_URL=postgresql://...`).
+
+### Additional Options
+
+- Run the script directly:
+  ```bash
+  python ops/scripts/seed-onet-data.py --env staging --dsn postgresql://user:pass@host:5432/db
+  ```
+- Enable verbose logging:
+  ```bash
+  python ops/scripts/seed-onet-data.py --env local --verbose
+  ```
+
+### Flyway Schema Management
+
+Flyway shares connection settings with Prisma. Set `DATABASE_URL`
+(or `SKILLFORGE_<ENV>_DATABASE_URL`) before running the workspace scripts; the
+wrapper at `ops/scripts/run-flyway.js` derives `FLYWAY_*` variables automatically.
+
+#### Baseline migrations
+
+Run during release drills to ensure core tables exist:
+
+```bash
+DATABASE_URL=postgresql://user:pass@host:5432/skillforge npm run flyway:migrate
+npm run flyway:info
+```
+
+`flyway:migrate` applies `V1_0__create_core_app_tables.sql` and
+`V1_1__create_reference_tables.sql`, aligning with the Prisma schema.
+
+#### Repeatable reporting aggregates
+
+After seeding or refreshing O\*NET/JAAT data, rebuild reporting views:
+
+```bash
+DATABASE_URL=postgresql://user:pass@host:5432/skillforge npm run flyway:migrate
+npm run flyway:info | grep R__onet_reporting_views
+```
+
+The repeatable script refreshes:
+
+- `reporting.onet_skill_coverage` (materialized view)
+- `reporting.onet_skill_category_summary` (materialized view)
+- `reporting.onet_source_versions` (view)
+
+No additional manual SQL is required; Flyway refreshes the materialized views
+as part of the migration.
