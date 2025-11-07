@@ -169,6 +169,11 @@ If no DSN is supplied, local runs fall back to
    ```bash
    npx prisma migrate status
    ```
+6. If the command hangs, tail the container logs to ensure Postgres
+   finished booting:
+   ```bash
+   docker compose logs -f skillforge-db
+   ```
 
 #### Tear Down
 

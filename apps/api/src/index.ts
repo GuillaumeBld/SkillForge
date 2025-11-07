@@ -1,10 +1,13 @@
 import cors from 'cors';
 import express, { type Request, type Response } from 'express';
 import morgan from 'morgan';
-import type { paths } from '@skillforge/shared';
 import { apiKeyAuth, enforceRateLimit, SLA_LIMITS, type PartnerRequest } from './middleware';
 import { partnerDataStore, type CandidateImportRequest, type AssessmentRequest, type BatchAssessmentRequest, type PlacementRequest } from './partner-store';
 import { webhookService } from './webhooks';
+import requestContext from './middleware/request-context';
+import { apiRateLimiter } from './middleware/rate-limit';
+import { errorHandler } from './middleware/error-handler';
+import { startTelemetry, shutdownTelemetry } from './observability/tracing';
 
 const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -200,7 +203,7 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
     console.log(`API listening on port ${port}`);
   });
-});
+}
 
 app.use(errorHandler);
 

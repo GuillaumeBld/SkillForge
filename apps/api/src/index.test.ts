@@ -1,3 +1,15 @@
+jest.mock('./observability/tracing', () => {
+  const noop = jest.fn();
+  const sdk = { start: noop, shutdown: noop };
+  return {
+    __esModule: true,
+    startTelemetry: noop,
+    shutdownTelemetry: noop,
+    otelSdk: sdk,
+    default: sdk
+  };
+});
+
 import request from 'supertest';
 import app from './index';
 import { getThrottler, SLA_LIMITS } from './middleware';
