@@ -174,6 +174,9 @@ If no DSN is supplied, local runs fall back to
    ```bash
    docker compose logs -f skillforge-db
    ```
+7. Confirm `DATABASE_URL` inside `.env` matches the credentials in
+   `docker-compose.yml` (user/password host). Mismatches trigger Prisma P1012 or
+   connection refused errors.
 
 #### Tear Down
 

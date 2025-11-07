@@ -48,6 +48,7 @@ For detailed technical specifications, integration guides, and partnership tiers
 - Confirm the container is running: `docker compose ps`
 - Install API dependencies (first run): `cd apps/api && npm install`
 - Verify database connectivity: `npx prisma migrate status`
+- Tail database logs if Prisma hangs: `docker compose logs -f skillforge-db`
 - Tear down when finished: `docker compose down` (add `-v` to drop the volume)
 
 ## Contact
