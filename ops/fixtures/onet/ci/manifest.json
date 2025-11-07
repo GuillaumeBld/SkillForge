@@ -1,0 +1,67 @@
+{
+  "datasets": [
+    {
+      "name": "occupations",
+      "table": "onet_occupations",
+      "fixture": "occupations.json",
+      "primary_key": [
+        "onet_soc_code"
+      ],
+      "columns": [
+        "onet_soc_code",
+        "jaat_job_id",
+        "preferred_label",
+        "description",
+        "source"
+      ],
+      "update_columns": [
+        "jaat_job_id",
+        "preferred_label",
+        "description",
+        "source"
+      ]
+    },
+    {
+      "name": "skills",
+      "table": "onet_skills",
+      "fixture": "skills.json",
+      "primary_key": [
+        "skill_code"
+      ],
+      "columns": [
+        "skill_code",
+        "name",
+        "category",
+        "description",
+        "source"
+      ],
+      "update_columns": [
+        "name",
+        "category",
+        "description",
+        "source"
+      ]
+    },
+    {
+      "name": "occupation_skills",
+      "table": "onet_occupation_skills",
+      "fixture": "occupation_skills.json",
+      "primary_key": [
+        "onet_soc_code",
+        "skill_code"
+      ],
+      "columns": [
+        "onet_soc_code",
+        "skill_code",
+        "importance",
+        "level",
+        "source"
+      ],
+      "update_columns": [
+        "importance",
+        "level",
+        "source"
+      ]
+    }
+  ]
+}

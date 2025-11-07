@@ -1,0 +1,9 @@
+[
+  {
+    "onet_soc_code": "15-1252.00",
+    "jaat_job_id": "JAAT-CI-001",
+    "preferred_label": "Software Developers",
+    "description": "CI smoke dataset for integration testing.",
+    "source": "O*NET 25.1"
+  }
+]

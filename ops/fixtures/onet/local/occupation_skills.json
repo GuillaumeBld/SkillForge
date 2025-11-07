@@ -1,0 +1,23 @@
+[
+  {
+    "onet_soc_code": "11-1011.00",
+    "skill_code": "2.A.1",
+    "importance": 81,
+    "level": 4.0,
+    "source": "O*NET 25.1"
+  },
+  {
+    "onet_soc_code": "15-1252.00",
+    "skill_code": "2.C.1",
+    "importance": 85,
+    "level": 4.5,
+    "source": "O*NET 25.1"
+  },
+  {
+    "onet_soc_code": "15-1252.00",
+    "skill_code": "2.A.1",
+    "importance": 60,
+    "level": 3.5,
+    "source": "O*NET 25.1"
+  }
+]

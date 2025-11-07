@@ -1,0 +1,16 @@
+[
+  {
+    "onet_soc_code": "11-1011.00",
+    "jaat_job_id": "JAAT-0001",
+    "preferred_label": "Chief Executives",
+    "description": "Determine and formulate policies and strategies for organizations to ensure they meet their goals.",
+    "source": "O*NET 25.1"
+  },
+  {
+    "onet_soc_code": "15-1252.00",
+    "jaat_job_id": "JAAT-0420",
+    "preferred_label": "Software Developers",
+    "description": "Design, build, and maintain software systems spanning services, APIs, and user-facing applications.",
+    "source": "O*NET 25.1"
+  }
+]

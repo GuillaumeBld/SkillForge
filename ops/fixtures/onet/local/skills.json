@@ -1,0 +1,16 @@
+[
+  {
+    "skill_code": "2.A.1",
+    "name": "Active Listening",
+    "category": "Basic Skills",
+    "description": "Giving full attention to what other people are saying, taking time to understand the points being made.",
+    "source": "O*NET 25.1"
+  },
+  {
+    "skill_code": "2.C.1",
+    "name": "Programming",
+    "category": "Technology Skills",
+    "description": "Writing computer programs for various purposes, selecting the right language and tools for the work.",
+    "source": "O*NET 25.1"
+  }
+]

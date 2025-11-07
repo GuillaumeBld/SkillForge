@@ -185,7 +185,8 @@ If no DSN is supplied, local runs fall back to
 
 - Inspect `ops/fixtures/onet/<env>/manifest.json` for the target environment.
 - Update the JSON fixtures (`occupations.json`, `skills.json`,
-  `occupation_skills.json`, `tasks.json`) with the desired dataset.
+  `occupation_skills.json`, `tasks.json`) with the desired dataset, keeping the
+  columns aligned with the reference schema in `docs/DATA.md`.
 - Execute the workspace command:
   ```bash
   npm run seed:local       # ops/fixtures/onet/local
