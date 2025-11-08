@@ -3,42 +3,87 @@ import { performDataRetention } from '../data-retention.worker';
 import { performPartnerSegregation } from '../partner-segregation.worker';
 import prisma from '../../config/prisma';
 
-function createMockPrisma() {
-  const mock: any = {
+type AsyncMock<TResult = unknown> = jest.Mock<Promise<TResult>, []>;
+type TransactionCallback = (tx: MockPrismaClient) => Promise<unknown>;
+
+function createAsyncMock<TResult = unknown>(): AsyncMock<TResult> {
+  return jest.fn<Promise<TResult>, []>();
+}
+
+interface MockPrismaClient {
+  user: {
+    findMany: AsyncMock;
+    update: AsyncMock;
+    delete: AsyncMock;
+  };
+  notificationPreference: {
+    findUnique: AsyncMock;
+    deleteMany: AsyncMock;
+    count: AsyncMock<number>;
+  };
+  notification: {
+    count: AsyncMock<number>;
+    updateMany: AsyncMock;
+    deleteMany: AsyncMock;
+    findMany: AsyncMock;
+    update: AsyncMock;
+  };
+  resumeIngestion: {
+    count: AsyncMock<number>;
+    deleteMany: AsyncMock;
+    findMany: AsyncMock;
+    update: AsyncMock;
+  };
+  assessment: {
+    count: AsyncMock<number>;
+    updateMany: AsyncMock;
+    deleteMany: AsyncMock;
+  };
+  profile: {
+    findUnique: AsyncMock;
+    deleteMany: AsyncMock;
+  };
+  $transaction: jest.Mock<Promise<unknown>, [TransactionCallback]>;
+}
+
+function createMockPrisma(): MockPrismaClient {
+  const mock: MockPrismaClient = {
     user: {
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn()
+      findMany: createAsyncMock(),
+      update: createAsyncMock(),
+      delete: createAsyncMock()
     },
     notificationPreference: {
-      findUnique: jest.fn(),
-      deleteMany: jest.fn(),
-      count: jest.fn()
+      findUnique: createAsyncMock(),
+      deleteMany: createAsyncMock(),
+      count: createAsyncMock<number>()
     },
     notification: {
-      count: jest.fn(),
-      updateMany: jest.fn(),
-      deleteMany: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn()
+      count: createAsyncMock<number>(),
+      updateMany: createAsyncMock(),
+      deleteMany: createAsyncMock(),
+      findMany: createAsyncMock(),
+      update: createAsyncMock()
     },
     resumeIngestion: {
-      count: jest.fn(),
-      deleteMany: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn()
+      count: createAsyncMock<number>(),
+      deleteMany: createAsyncMock(),
+      findMany: createAsyncMock(),
+      update: createAsyncMock()
     },
     assessment: {
-      count: jest.fn(),
-      updateMany: jest.fn(),
-      deleteMany: jest.fn()
+      count: createAsyncMock<number>(),
+      updateMany: createAsyncMock(),
+      deleteMany: createAsyncMock()
     },
     profile: {
-      findUnique: jest.fn(),
-      deleteMany: jest.fn()
+      findUnique: createAsyncMock(),
+      deleteMany: createAsyncMock()
     },
-    $transaction: jest.fn(async (callback: (tx: any) => Promise<any>) => callback(mock))
+    $transaction: jest.fn<Promise<unknown>, [TransactionCallback]>()
   };
+
+  mock.$transaction.mockImplementation(async (callback) => callback(mock));
 
   return mock;
 }
@@ -66,7 +111,7 @@ jest.mock('../../config/queue', () => {
   };
 });
 
-const prismaMock = prisma as unknown as ReturnType<typeof createMockPrisma>;
+const prismaMock = prisma as unknown as MockPrismaClient;
 
 beforeEach(() => {
   jest.clearAllMocks();

@@ -4,7 +4,11 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "baseUrl": "src",
-    "types": ["vite/client", "vitest/globals"]
+    "types": ["vite/client", "vitest/globals"],
+    "paths": {
+      "@skillforge/shared": ["../../packages/shared/src/index.ts"],
+      "@skillforge/shared/*": ["../../packages/shared/src/*"]
+    }
   },
   "include": ["src", "vitest.setup.ts"],
   "exclude": ["dist", "node_modules"]
