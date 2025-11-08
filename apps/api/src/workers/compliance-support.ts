@@ -78,22 +78,6 @@ export const auditLog = (
 
 type UserWhereInput = Record<string, unknown>;
 
-type UserFindManyArgs = {
-  where?: UserWhereInput;
-  select?: {
-    id: boolean;
-    email: boolean;
-    marketingOptIn: boolean;
-    createdAt: boolean;
-    updatedAt: boolean;
-    profile?: {
-      select: {
-        goals: boolean;
-      };
-    };
-  };
-};
-
 export const buildScopeWhere = (scope?: ComplianceScope): UserWhereInput | undefined => {
   if (!scope) {
     return undefined;
@@ -155,7 +139,8 @@ export const fetchScopedUsers = async (options: {
     where = scopeWhere ?? filters;
   }
 
-  const args: UserFindManyArgs = {
+  const users = await prisma.user.findMany({
+    where,
     select: {
       id: true,
       email: true,
@@ -168,15 +153,9 @@ export const fetchScopedUsers = async (options: {
         }
       }
     }
-  };
+  });
 
-  if (where) {
-    args.where = where;
-  }
-
-  const users = await prisma.user.findMany(args as never);
-
-  return (users as Array<any>).map((user: any) => ({
+  return users.map((user) => ({
     id: user.id,
     email: user.email,
     marketingOptIn: user.marketingOptIn,

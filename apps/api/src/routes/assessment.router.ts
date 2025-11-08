@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Router, type NextFunction } from 'express';
 
 import prisma from '../config/prisma';
@@ -8,7 +8,7 @@ import { assessmentQueue } from '../workers';
 const assessmentRouter = Router();
 
 const handlePrismaError = (error: unknown, next: NextFunction) => {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  if (error instanceof PrismaClientKnownRequestError) {
     if (error.code === 'P2002') {
       next(new ApiError('Assessment conflict', 409));
       return;

@@ -145,14 +145,14 @@ export const performPartnerSegregation = async (
         for (const update of resumeUpdates) {
           await tx.resumeIngestion.update({
             where: { id: update.id },
-            data: { ingestionMetadata: update.after }
+            data: { ingestionMetadata: update.after as Prisma.InputJsonValue }
           });
         }
 
         for (const update of notificationUpdates) {
           await tx.notification.update({
             where: { id: update.id },
-            data: { actions: update.after }
+            data: { actions: update.after as Prisma.InputJsonValue }
           });
         }
       });

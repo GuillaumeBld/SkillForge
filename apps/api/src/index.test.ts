@@ -10,8 +10,8 @@ jest.mock('./observability/tracing', () => {
   };
 });
 
+import type { Express } from 'express';
 import request from 'supertest';
-import app from './index';
 import { getThrottler, SLA_LIMITS } from './middleware';
 import { partnerDataStore } from './partner-store';
 import { webhookService } from './webhooks';
@@ -20,16 +20,18 @@ import { __resetPartnerCredentialCache } from './config';
 type Headers = Record<string, string>;
 
 const primaryPartnerHeaders: Headers = {
-  'x-api-key': 'sk_live_123',
-  'x-api-secret': 'sh_live_456',
-  'x-partner-id': 'workforce-agency-17'
+  'x-api-key': 'pk_dev_sample_123',
+  'x-api-secret': 'sk_dev_sample_456',
+  'x-partner-id': 'development-partner-1'
 };
 
 const secondaryPartnerHeaders: Headers = {
-  'x-api-key': 'sk_live_789',
-  'x-api-secret': 'sh_live_012',
-  'x-partner-id': 'enterprise-analytics-88'
+  'x-api-key': 'pk_dev_sample_789',
+  'x-api-secret': 'sk_dev_sample_012',
+  'x-partner-id': 'development-partner-2'
 };
+
+let app: Express;
 
 const withHeaders = (overrides: Headers = {}) => ({
   ...primaryPartnerHeaders,
@@ -37,10 +39,15 @@ const withHeaders = (overrides: Headers = {}) => ({
 });
 
 describe('SkillForge partner workflows', () => {
-  beforeEach(() => {
+  beforeAll(async () => {
+    const module = await import('./index');
+    app = module.default;
+  });
+
+  beforeEach(async () => {
     delete process.env.PARTNER_CREDENTIALS;
     __resetPartnerCredentialCache();
-    partnerDataStore.clear();
+    await partnerDataStore.clear();
     webhookService.reset();
     getThrottler().clear();
   });
@@ -124,7 +131,7 @@ describe('SkillForge partner workflows', () => {
       .expect(200);
 
     expect(primaryLookup.body.batch.id).toBe(batchId);
-    expect(primaryLookup.body.batch.partnerId).toBe('workforce-agency-17');
+    expect(primaryLookup.body.batch.partnerId).toBe('development-partner-1');
   });
 
   it('throttles candidate import requests per SLA', async () => {
@@ -132,7 +139,11 @@ describe('SkillForge partner workflows', () => {
     const limit = SLA_LIMITS.candidateImport.production;
 
     for (let index = 0; index < limit; index += 1) {
-      const allowed = throttler.attempt('workforce-agency-17:candidateImport', SLA_LIMITS.candidateImport, 'production');
+      const allowed = throttler.attempt(
+        'development-partner-1:candidateImport',
+        SLA_LIMITS.candidateImport,
+        'production'
+      );
       expect(allowed).toBe(true);
     }
 

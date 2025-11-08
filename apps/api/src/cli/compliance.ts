@@ -37,7 +37,13 @@ type JobDefinition<Payload> = {
   run: (payload: Payload) => Promise<ComplianceJobResult>;
 };
 
-const JOBS: Record<JobName, JobDefinition<any>> = {
+type JobRegistry = {
+  'consent-revocation': JobDefinition<ConsentRevocationJobPayload>;
+  'data-retention': JobDefinition<DataRetentionJobPayload>;
+  'partner-segregation': JobDefinition<PartnerSegregationJobPayload>;
+};
+
+const JOBS: JobRegistry = {
   'consent-revocation': {
     name: 'consent-revocation',
     queue: consentRevocationQueue,
@@ -106,7 +112,7 @@ Examples:
 `.trim();
 
 const parseArgValue = (arg: string, next: string | undefined): [string | undefined, number] => {
-  const [flag, inlineValue] = arg.split('=');
+  const [, inlineValue] = arg.split('=');
 
   if (inlineValue !== undefined) {
     return [inlineValue, 0];
