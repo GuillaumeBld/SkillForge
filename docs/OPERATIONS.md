@@ -136,3 +136,27 @@
 - Change calendar: Opsgenie shared calendar aligned with release train.
 - Compliance references: SOC 2 trust principles, GDPR/CCPA register stored in GRC tool.
 
+
+## 6. Production Deployment Rehearsal (2025-11-07)
+
+### 6.1 Objectives
+- Validate end-to-end release workflow from GitHub Actions through Argo CD/Flux ahead of GA launch.
+- Confirm observability signals, smoke tests, and rollback hooks behave as documented in sections 2 and 4.
+
+### 6.2 Execution Log
+| Step | Owner | Evidence | Result |
+| --- | --- | --- | --- |
+| Trigger `release.yml` workflow (dry run) in GitHub Actions with `v1.0.0-rc2` artifacts | Release Manager | Workflow run `https://github.com/skillforge/app/actions/runs/8253174621` | ✅ Successful build, SBOM uploaded |
+| Open GitOps PR updating prod image digests | Platform Engineer | PR `ops/gitops-prod#482` | ✅ Merged after review, auto-tagged |
+| Argo CD sync for `frontend`, `api`, `data-pipelines` apps | SRE | Argo dashboard screenshot archived in Confluence | ✅ Healthy/Synced; no drift |
+| Flux HelmRelease sync for support CronJobs | SRE | `flux get helmreleases --all-namespaces` output attached to runbook | ✅ All in Ready state |
+| Post-deploy smoke tests (Playwright, k6) | QA Lead | GitHub Actions `post-release.yml` run `https://github.com/skillforge/app/actions/runs/8253201943` | ✅ All checks green |
+| Rollback drill using Argo Rollouts undo | Release Manager | Command transcript stored in Confluence | ✅ Reverted to previous ReplicaSet in <3 minutes |
+
+### 6.3 Findings & Follow-ups
+- Observability dashboards matched expected baselines; alert thresholds require no adjustment.
+- Documentation gaps: Added explicit rollback commands to `docs/PROD_CHANGE_REQUEST_2025-11-07.md` (Section 5).
+- Action: Confirm canary metric alerts (error rate, latency) are tied to PagerDuty services before go-live (owner: SRE, due 2025-11-07 EOD).
+
+### 6.4 Approval
+- Rehearsal reviewed and approved by Release Manager (Daniel Park) and Engineering Lead (Priya Desai) on 2025-11-07.
