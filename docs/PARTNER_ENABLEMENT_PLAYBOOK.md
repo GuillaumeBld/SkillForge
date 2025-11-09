@@ -161,6 +161,35 @@ Thanks,
 
 ---
 
+## 4. Launch Communications Distribution Checklist
+
+This checklist operationalises the final partner communications package so that account teams can execute immediately once production access is approved.
+
+### 4.1 Distribution Timeline
+| Day | Trigger | Audience | Channel | Owner |
+|-----|---------|----------|---------|-------|
+| Day -3 | Confirm go-live window and sandbox freeze | Primary partner contacts, integration leads | Email using "SLA Confirmation" template | Account Manager |
+| Day -1 | Rehearsal summary & webhook validation status | Technical contacts | Shared Slack/Teams channel with attached webhook QA report | Solutions Architect |
+| Day 0 (Go-live) | Production cutover announcement & consent reminders | All partner stakeholders + support distribution list | Email blast referencing onboarding hub | Partnerships Lead |
+| Day 0 (Go-live +2h) | Support escalation reminder | Tier-based escalation groups | Slack/Teams pinned post with escalation tree graphic | Support Manager |
+| Day +1 | Post-launch survey & office hours invite | Primary contacts & admins | Email with onboarding materials bundle | Customer Success Ops |
+
+### 4.2 Communication Artifacts
+- **Launch Announcement**: Adapt "Welcome Email" template with production URLs (`https://app.skillforge.com`, `https://api.skillforge.com`).
+- **Webhook QA Summary**: Table of test deliveries per partner including endpoint URL, status code, retry latency, and monitoring link (placeholder until instrumentation is live).
+- **Consent & Segregation Assurance Note**: References `docs/DATA_OPERATIONS.md` compliance drills; call out that enforcement jobs will be re-run once infrastructure is available.
+- **Onboarding Resource Pack**: Consolidated PDF/Notion bundle linking developer docs, analytics dashboards, SLA guide, and escalation matrix.
+- **Support Escalation Matrix**: Visual flowchart indicating response targets, escalation contacts, and on-call rotation schedule.
+
+### 4.3 Execution Steps
+1. Export partner contact lists from CRM and validate consent preferences before distribution.
+2. Personalise templates with tier-specific SLAs and sandbox-to-production transition guidance.
+3. Attach webhook QA summary (or note blockers) and include reminder of compliance verification gaps until automation ships.
+4. Publish support escalation matrix to shared knowledge base and link it in Day 0 and Day +1 communications.
+5. Archive all outbound communications and confirmations in the partner enablement workspace for audit readiness.
+
+---
+
 ## 4. Roles & Responsibilities
 | Function | Primary Responsibilities |
 |----------|--------------------------|
