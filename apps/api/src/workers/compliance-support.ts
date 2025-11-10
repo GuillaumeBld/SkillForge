@@ -139,7 +139,7 @@ export const fetchScopedUsers = async (options: {
     where = scopeWhere ?? filters;
   }
 
-  const users = await prisma.user.findMany({
+  const users = (await prisma.user.findMany({
     where,
     select: {
       id: true,
@@ -153,9 +153,16 @@ export const fetchScopedUsers = async (options: {
         }
       }
     }
-  });
+  })) as Array<{
+    id: string;
+    email: string;
+    marketingOptIn: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    profile: { goals: string[] } | null;
+  }>;
 
-  return users.map((user) => ({
+  return users.map<ScopedUser>((user) => ({
     id: user.id,
     email: user.email,
     marketingOptIn: user.marketingOptIn,

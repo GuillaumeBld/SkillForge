@@ -1,5 +1,6 @@
 import type { Job } from 'bullmq';
 import type { Prisma } from '@prisma/client';
+import type { InputJsonValue } from '@prisma/client/runtime/library';
 
 import prisma from '../config/prisma';
 import { registerQueue } from '../config/queue';
@@ -145,14 +146,14 @@ export const performPartnerSegregation = async (
         for (const update of resumeUpdates) {
           await tx.resumeIngestion.update({
             where: { id: update.id },
-            data: { ingestionMetadata: update.after as Prisma.InputJsonValue }
+            data: { ingestionMetadata: update.after as InputJsonValue }
           });
         }
 
         for (const update of notificationUpdates) {
           await tx.notification.update({
             where: { id: update.id },
-            data: { actions: update.after as Prisma.InputJsonValue }
+            data: { actions: update.after as InputJsonValue }
           });
         }
       });
