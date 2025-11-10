@@ -43,13 +43,13 @@ For detailed technical specifications, integration guides, and partnership tiers
 
 ## Local Development
 
-- Copy environment defaults: `cp apps/api/.env.example apps/api/.env`
-- Start PostgreSQL locally: `docker compose up -d skillforge-db`
-- Confirm the container is running: `docker compose ps`
-- Install API dependencies (first run): `cd apps/api && npm install`
-- Verify database connectivity: `npx prisma migrate status`
-- Tail database logs if Prisma hangs: `docker compose logs -f skillforge-db`
-- Tear down when finished: `docker compose down` (add `-v` to drop the volume)
+1. Copy the API environment defaults: `cp apps/api/.env.example apps/api/.env`
+2. Start PostgreSQL locally: `docker compose up -d skillforge-db`
+3. Confirm the container is running: `docker compose ps`
+4. Install API dependencies (first run): `cd apps/api && npm install`
+5. Verify database connectivity: `npx prisma migrate status`
+6. Tail database logs if Prisma hangs: `docker compose logs -f skillforge-db`
+7. Tear the stack down after drills: `docker compose down` (add `-v` to drop the volume)
 
 ## Contact
 

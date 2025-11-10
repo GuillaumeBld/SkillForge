@@ -165,7 +165,7 @@ If no DSN is supplied, local runs fall back to
    cd apps/api
    npm install
    ```
-5. Verify connectivity via Prisma:
+5. Verify connectivity via Prisma (run within `apps/api`):
    ```bash
    npx prisma migrate status
    ```
