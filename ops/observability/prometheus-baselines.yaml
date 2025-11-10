@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: skillforge-baselines
+  labels:
+    app.kubernetes.io/name: skillforge-observability
+    app.kubernetes.io/part-of: skillforge
+spec:
+  groups:
+    - name: staging-baselines
+      interval: 2m
+      rules:
+        - record: api:request_duration_seconds:p95_staging_baseline
+          expr: |-
+            histogram_quantile(
+              0.95,
+              sum by (le) (
+                rate(http_request_duration_seconds_bucket{environment="staging", job=~"api-.*"}[5m])
+              )
+            )
+        - record: api:error_rate_staging_baseline
+          expr: |-
+            sum by (service) (
+              rate(http_requests_total{environment="staging", job=~"api-.*", status=~"5.."}[5m])
+            )
+            /
+            sum by (service) (
+              rate(http_requests_total{environment="staging", job=~"api-.*"}[5m])
+            )
+        - record: data_pipeline:job_duration_seconds:p95_staging_baseline
+          expr: |-
+            histogram_quantile(
+              0.95,
+              sum by (le, job) (
+                rate(data_pipeline_job_duration_seconds_bucket{environment="staging"}[15m])
+              )
+            )
+        - record: redis:cache_hit_ratio_staging_baseline
+          expr: |-
+            avg by (cluster) (
+              rate(redis_keyspace_hits_total{environment="staging"}[5m])
+              /
+              (rate(redis_keyspace_hits_total{environment="staging"}[5m]) + rate(redis_keyspace_misses_total{environment="staging"}[5m]))
+            )
+        - record: k8s:pod_restart_rate_staging_baseline
+          expr: |-
+            sum by (namespace) (
+              increase(kube_pod_container_status_restarts_total{environment="staging"}[1h])
+            )

@@ -1,0 +1,103 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: skillforge-alerts
+  labels:
+    app.kubernetes.io/name: skillforge-observability
+    app.kubernetes.io/part-of: skillforge
+spec:
+  groups:
+    - name: production-slos
+      interval: 1m
+      rules:
+        - alert: SkillforgeApiErrorRateP1
+          expr: |
+            sum by (service) (
+              rate(http_requests_total{environment="prod", job=~"api-.*", status=~"5.."}[5m])
+            )
+            /
+            sum by (service) (
+              rate(http_requests_total{environment="prod", job=~"api-.*"}[5m])
+            )
+            > 0.01
+          for: 5m
+          labels:
+            severity: P1
+            team: sre
+          annotations:
+            summary: "API error rate breached 1% threshold"
+            description: |
+              Production API {{ $labels.service }} error rate is above 1%. Compare against staging baseline using series api:error_rate_staging_baseline to determine if regression was observed pre-release.
+            runbook_url: https://confluence.skillforge.local/runbooks/api-incidents
+        - alert: SkillforgeApiLatencyP1
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum by (le) (
+                rate(http_request_duration_seconds_bucket{environment="prod", job=~"api-auth|api-search"}[5m])
+              )
+            ) > 0.35
+          for: 10m
+          labels:
+            severity: P1
+            team: sre
+          annotations:
+            summary: "Critical API latency regression"
+            description: |
+              Auth/Search latency P95 exceeded 350ms for 10 minutes. Inspect staging baseline series api:request_duration_seconds:p95_staging_baseline for recent changes.
+            runbook_url: https://confluence.skillforge.local/runbooks/api-latency
+        - alert: SkillforgeQueueDepthP1
+          expr: |
+            max(rate(job_queue_depth{environment="prod", queue=~"(etl|notification)"}[1m])) > 500
+          for: 5m
+          labels:
+            severity: P1
+            team: data
+          annotations:
+            summary: "Job queue depth above 500"
+            description: |
+              Production ETL/notification queue depth is above 500 jobs. Review staging comparison panel `Queue Depth (Staging vs Prod)` on the Data Pipelines dashboard.
+            runbook_url: https://confluence.skillforge.local/runbooks/queue-drain
+        - alert: SkillforgeRedisHitRatioP2
+          expr: |
+            avg by (cluster) (
+              rate(redis_keyspace_hits_total{environment="prod"}[5m])
+              /
+              (rate(redis_keyspace_hits_total{environment="prod"}[5m]) + rate(redis_keyspace_misses_total{environment="prod"}[5m]))
+            ) < 0.85
+          for: 15m
+          labels:
+            severity: P2
+            team: platform
+          annotations:
+            summary: "Redis cache hit ratio below 85%"
+            description: |
+              Cache efficiency dropped below target. Compare to redis:cache_hit_ratio_staging_baseline to determine rollout correlation.
+            runbook_url: https://confluence.skillforge.local/runbooks/cache
+        - alert: SkillforgeDataFreshnessP1
+          expr: |
+            max(data_pipeline_freshness_hours{environment="prod"}) > 24
+          for: 15m
+          labels:
+            severity: P1
+            team: data
+          annotations:
+            summary: "Data freshness beyond 24h SLA"
+            description: |
+              Production analytics dataset freshness exceeded 24 hours. Check staging baseline data_pipeline:job_duration_seconds:p95_staging_baseline for precursor delays.
+            runbook_url: https://confluence.skillforge.local/runbooks/data-freshness
+    - name: staging-informational
+      interval: 5m
+      rules:
+        - alert: SkillforgeStagingRegressionDetected
+          expr: |
+            max(api:error_rate_staging_baseline) > 0.01
+          for: 10m
+          labels:
+            severity: P3
+            team: product-analytics
+          annotations:
+            summary: "Staging API error rate breached 1%"
+            description: |
+              Staging error rate is elevated; review upcoming releases and ensure baselines updated before production promotion.
+            runbook_url: https://confluence.skillforge.local/runbooks/staging-regressions
