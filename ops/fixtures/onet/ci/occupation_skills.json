@@ -1,9 +1,8 @@
 [
   {
-    "onet_soc_code": "15-1252.00",
-    "skill_code": "2.C.1",
-    "importance": 88,
-    "level": 4.2,
-    "source": "O*NET 25.1"
+    "occupation_id": "11111111-1111-1111-1111-111111111111",
+    "skill_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "importance_level": 81,
+    "proficiency_level": 4.0
   }
 ]

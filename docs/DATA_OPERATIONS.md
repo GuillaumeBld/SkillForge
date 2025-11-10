@@ -193,8 +193,12 @@ If no DSN is supplied, local runs fall back to
 
 - Inspect `ops/fixtures/onet/<env>/manifest.json` for the target environment.
 - Update the JSON fixtures (`occupations.json`, `skills.json`,
-  `occupation_skills.json`, `tasks.json`) with the desired dataset, keeping the
-  columns aligned with the reference schema in `docs/DATA.md`.
+  `occupation_skills.json`, `knowledge.json`, `occupation_knowledge.json`,
+  `abilities.json`, `tasks.json`) with the desired dataset, keeping the columns
+  aligned with the reference schema in `docs/DATA.md`.
+- Use stable UUIDs for `id` fields so that join tables (e.g.
+  `occupation_skills`, `occupation_knowledge`, and `jaat_tasks`) reference the
+  same records across refreshes.
 - Execute the workspace command:
   ```bash
   npm run seed:local       # ops/fixtures/onet/local
@@ -222,7 +226,9 @@ All operations run inside a single PostgreSQL transaction. Inserts use
 - Local fixtures contain development samples; `ci` ships a minimal dataset for
   pipelines.
 - Staging/production directories default to empty arrays—populate them with the
-  authoritative data exports before seeding.
+  authoritative data exports before seeding. When staging diverges from
+  production (e.g. testing a new release), copy fixtures between directories or
+  maintain per-environment manifests tailored to the dataset under review.
 - If staging or production databases need different credentials, set the
   corresponding `SKILLFORGE_<ENV>_DATABASE_URL` (e.g.
   `export SKILLFORGE_PRODUCTION_DATABASE_URL=postgresql://...`).
