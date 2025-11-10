@@ -23,10 +23,20 @@ export interface PartnerSegregationJobPayload extends ComplianceJobBase {
   tenantMetadataKey?: string;
 }
 
+type JsonCompatible =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonCompatible[]
+  | { [key: string]: JsonCompatible | undefined };
+
+type JsonRecord = { [key: string]: JsonCompatible | undefined };
+
 interface MetadataUpdate {
   id: string;
-  before: Record<string, unknown>;
-  after: Record<string, unknown>;
+  before: JsonRecord;
+  after: JsonRecord;
 }
 
 const JOB_NAME = 'partner-segregation';
@@ -34,7 +44,7 @@ const JOB_NAME = 'partner-segregation';
 const DEFAULT_TENANT_METADATA_KEY = 'tenantId';
 const DEFAULT_PARTNER_METADATA_KEY = 'partnerId';
 
-const needsMetadataUpdate = (metadata: Record<string, unknown>, tenantId: string): boolean => {
+const needsMetadataUpdate = (metadata: JsonRecord, tenantId: string): boolean => {
   const tenantValue = metadata[DEFAULT_TENANT_METADATA_KEY] ?? metadata[DEFAULT_PARTNER_METADATA_KEY];
 
   return tenantValue !== tenantId;
@@ -106,7 +116,7 @@ export const performPartnerSegregation = async (
     const resumeUpdates: MetadataUpdate[] = [];
 
     for (const ingestion of resumeIngestions) {
-      const metadata = toRecord(ingestion.ingestionMetadata);
+      const metadata = toRecord(ingestion.ingestionMetadata) as JsonRecord;
 
       if (needsMetadataUpdate(metadata, scope.tenantId)) {
         resumeUpdates.push({
@@ -124,7 +134,7 @@ export const performPartnerSegregation = async (
     const notificationUpdates: MetadataUpdate[] = [];
 
     for (const notification of notifications) {
-      const actionsMetadata = toRecord(notification.actions);
+      const actionsMetadata = toRecord(notification.actions) as JsonRecord;
       const currentTenant = actionsMetadata[tenantMetadataKey] ?? actionsMetadata[DEFAULT_PARTNER_METADATA_KEY];
 
       if (currentTenant !== scope.tenantId) {
@@ -145,14 +155,17 @@ export const performPartnerSegregation = async (
         for (const update of resumeUpdates) {
           await tx.resumeIngestion.update({
             where: { id: update.id },
-            data: { ingestionMetadata: update.after as Prisma.InputJsonValue }
+            // Cast through `never` because the generated Prisma client no longer exposes the
+            // JSON input helpers (`InputJsonValue`), but the runtime still accepts plain objects.
+            data: { ingestionMetadata: update.after } as never
           });
         }
 
         for (const update of notificationUpdates) {
           await tx.notification.update({
             where: { id: update.id },
-            data: { actions: update.after as Prisma.InputJsonValue }
+            // See comment above about JSON casting.
+            data: { actions: update.after } as never
           });
         }
       });

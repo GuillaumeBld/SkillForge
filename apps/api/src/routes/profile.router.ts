@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { Router, type NextFunction } from 'express';
 
 import prisma from '../config/prisma';
@@ -9,8 +8,17 @@ const profileRouter = Router();
 
 const userCacheKey = (userId: string) => `user:${userId}`;
 
+const isPrismaKnownRequestError = (error: unknown): error is { code: string } => {
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof (error as Record<string, unknown>).code === 'string'
+  );
+};
+
 const handlePrismaError = (error: unknown, next: NextFunction) => {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  if (isPrismaKnownRequestError(error)) {
     if (error.code === 'P2002') {
       next(new ApiError('Duplicate resource', 409));
       return;

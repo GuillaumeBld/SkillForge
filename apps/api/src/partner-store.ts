@@ -1,9 +1,5 @@
 import { randomUUID } from 'crypto';
-import type {
-  PartnerCandidateBatch as PrismaCandidateBatch,
-  PartnerCandidateResult as PrismaCandidateResult,
-  PrismaClient
-} from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 
 import type { Environment } from './config';
 import { prisma } from './config/prisma';
@@ -135,6 +131,27 @@ interface CandidateEvaluation {
   normalizedResults: NormalizedCandidateResult[];
   processed: number;
   failed: number;
+}
+
+interface CandidateResultRecord {
+  id: string;
+  externalId: string;
+  status: CandidateStatus;
+  candidateId: string | null;
+  jaatVectorVersion: string | null;
+  error: string | null;
+  createdAt: Date;
+}
+
+interface CandidateBatchRecord {
+  id: string;
+  partnerId: string;
+  environment: string;
+  webhookUrl: string | null;
+  processed: number;
+  failed: number;
+  createdAt: Date;
+  results: CandidateResultRecord[];
 }
 
 const evaluateCandidateImport = (payload: CandidateImportRequest): CandidateEvaluation => {
@@ -327,9 +344,7 @@ class InMemoryPartnerDataStore implements PartnerDataStore {
   }
 }
 
-const mapPrismaCandidateBatch = (
-  record: PrismaCandidateBatch & { results: PrismaCandidateResult[] }
-): CandidateBatch => ({
+const mapPrismaCandidateBatch = (record: CandidateBatchRecord): CandidateBatch => ({
   id: record.id,
   partnerId: record.partnerId,
   environment: record.environment as Environment,
