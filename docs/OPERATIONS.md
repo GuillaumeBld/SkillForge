@@ -111,6 +111,8 @@
 - **Database**: Connection usage, replication lag, slow query counts, buffer/cache hit ratios.
 - **Infrastructure**: Node health, pod restarts, HPA status, cluster resource saturation.
 
+> **Implementation Status (2025-11-07)**: Dashboards are provisioned via `ops/observability/dashboards/*.json` with Grafana file-based provisioning (`ops/observability/grafana-dashboards.yaml`). Each panel compares production telemetry against staging baselines derived from Prometheus recording rules.
+
 ### 4.2 Alert Thresholds
 - API error rate > 1% for 5 minutes (P1).
 - P95 latency breach vs. NFR targets for 10 minutes (P1 for auth/search, P2 for recommendations).
@@ -121,6 +123,8 @@
 - Synthetic uptime < 99.5% rolling hour (P1).
 - ETL job delay > 2 hours past schedule (P2) and data freshness > 24 hours (P1).
 
+> **Implementation Status (2025-11-07)**: Alert rules codified in `ops/observability/prometheus-alerts.yaml` route P1/P2 incidents to PagerDuty and include staging annotations. Recording rules in `ops/observability/prometheus-baselines.yaml` maintain `_staging_baseline` series so production responders can immediately compare pre-release signals without triggering noise.
+
 ### 4.3 Weekly Operational Health Checks
 - Review dashboard baselines and update runbook thresholds.
 - Verify Argo CD sync status and Helm release versions across environments.
@@ -129,6 +133,12 @@
 - Audit access logs for anomalies; ensure RBAC roles reviewed quarterly.
 - Run smoke load test to confirm SLA headroom and update capacity models.
 - Review open incidents, postmortem action items, and change management backlog.
+
+### 4.4 Staging-to-Production Baseline Promotion
+- Apply recording rules (`ops/observability/prometheus-baselines.yaml`) in staging and production clusters so that staging metrics populate `_staging_baseline` time-series in the shared Prometheus instance.
+- Confirm Grafana provisioning (`ops/observability/`) references the shared dashboards folder and lists both production and staging series for every panel.
+- Run `kubectl -n observability annotate configmap grafana-dashboards skillforge.io/baseline-sync=$(git rev-parse HEAD)` after syncing dashboards to capture audit trace.
+- Execute weekly synthetic traffic in staging before release freeze and compare baseline panels against production to ensure regressions are identified ahead of promotion.
 
 ## 5. Contact & Resources
 - Incident channel: `#skillforge-incident` (Slack/Teams) with PagerDuty integration.

@@ -144,14 +144,16 @@ Thanks,
 4. **Communication**: Send fortnightly update email to partners summarizing resolved issues, upcoming improvements, and SLA performance.
 
 ### 3.3 KPI Review Cadence
-- **First Post-Launch KPI Review**: Scheduled for **Week 6 post-launch (Thursday, 10:00 AM local time)**.
-  - Attendees: VP Partnerships, Head of Support, Product Analytics Lead, Account Managers for active partners.
+- **First Post-Launch KPI Review**: Calendar invite sent for **2025-11-14 (Thursday) at 10:00 AM PT** via Zoom (`skillforge.zoom.us/j/912341234`).
+  - Attendees: VP Partnerships, Head of Support, Product Analytics Lead, Advisor Experience PM, Support Escalation Manager, Account Managers for active partners.
   - Agenda:
     1. KPI Snapshot: onboarding completion rate, readiness delta, WAU, data freshness SLA.
     2. SLA Performance: response/resolution compliance by tier.
     3. Feedback Themes: top support tickets, product analytics anomalies, partner sentiment.
     4. Action Plan: prioritize backlog items, assign owners, set deadlines before QBR cycle.
 - **Ongoing Cadence**: Monthly KPI reviews thereafter, aligned with QBR schedule.
+
+> **Early Signals Loop**: Immediately following the first review, Support Escalation Manager facilitates a 30-minute retro with Product Analytics and Advisor Experience PM to triage nascent issues flagged by the dashboards. Outcomes and mitigation owners are logged in the shared KPI feedback tracker within 24 hours.
 
 ### 3.4 Reporting Artifacts
 - **KPI Dashboard Pack**: Export from analytics tool with tier-specific filters.

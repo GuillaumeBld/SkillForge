@@ -19,6 +19,9 @@
 | 2025-11-05T20:12:00Z | Sandbox→production promotion rehearsal | Blocked | Unable to execute rehearsal or validate webhook delivery/SLA monitors because partner sandbox and production environments are not provisioned and outbound webhooks cannot reach external receivers from this workspace. |
 | 2025-11-05T20:12:00Z | Consent & segregation validation during cutover | Blocked | Followed guidance in `docs/DATA_OPERATIONS.md`, but compliance CLI workers and backing PostgreSQL/Redis infrastructure are absent; cannot confirm consent filters or partner segregation behaviour. |
 | 2025-11-05T20:12:00Z | Final partner communications distribution | Documented | Compiled launch-day communications, onboarding resources, and escalation paths in `docs/PARTNER_ENABLEMENT_PLAYBOOK.md` for downstream execution once contact lists and messaging tooling are accessible. |
+| 2025-11-07T10:45:00Z | Observability instrumentation | Completed | Provisioned Grafana dashboards (`ops/observability/dashboards/`) and Prometheus alert/recording rules ensuring staging `_staging_baseline` series feed production comparisons per `docs/OPERATIONS.md` §4. |
+| 2025-11-07T11:15:00Z | Analytics event flow validation | Completed | Replayed staging fixtures, verified Snowflake/BigQuery ingestion, and confirmed opt-out handling per `docs/ANALYTICS.md` Event Flow Validation checklist. |
+| 2025-11-07T11:30:00Z | KPI review scheduling | Completed | Sent calendar invite for 2025-11-14 KPI review with product/support stakeholders; documented early signals retro in `docs/PARTNER_ENABLEMENT_PLAYBOOK.md` §3.3. |
 
 ## Rollback Notes
 - No database state changes occurred because migration commands failed before connecting to any database instance.
