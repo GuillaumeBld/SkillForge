@@ -2,82 +2,135 @@
   "datasets": [
     {
       "name": "occupations",
-      "table": "onet_occupations",
+      "table": "occupations",
       "fixture": "occupations.json",
-      "primary_key": [
-        "onet_soc_code"
-      ],
+      "primary_key": ["id"],
       "columns": [
-        "onet_soc_code",
-        "jaat_job_id",
-        "preferred_label",
+        "id",
+        "onet_code",
+        "soc_code",
+        "title",
         "description",
-        "source"
+        "alternative_titles",
+        "tasks",
+        "education_level"
       ],
       "update_columns": [
-        "jaat_job_id",
-        "preferred_label",
+        "onet_code",
+        "soc_code",
+        "title",
         "description",
-        "source"
+        "alternative_titles",
+        "tasks",
+        "education_level"
       ]
     },
     {
       "name": "skills",
-      "table": "onet_skills",
+      "table": "skills",
       "fixture": "skills.json",
-      "primary_key": [
-        "skill_code"
-      ],
+      "primary_key": ["id"],
       "columns": [
-        "skill_code",
+        "id",
+        "code",
         "name",
-        "category",
         "description",
-        "source"
+        "category",
+        "difficulty_level",
+        "related_skills"
       ],
       "update_columns": [
+        "code",
         "name",
-        "category",
         "description",
-        "source"
+        "category",
+        "difficulty_level",
+        "related_skills"
       ]
     },
     {
       "name": "occupation_skills",
-      "table": "onet_occupation_skills",
+      "table": "occupation_skills",
       "fixture": "occupation_skills.json",
       "primary_key": [
-        "onet_soc_code",
-        "skill_code"
+        "occupation_id",
+        "skill_id"
       ],
       "columns": [
-        "onet_soc_code",
-        "skill_code",
-        "importance",
-        "level",
-        "source"
+        "occupation_id",
+        "skill_id",
+        "importance_level",
+        "proficiency_level"
       ],
       "update_columns": [
-        "importance",
-        "level",
-        "source"
+        "importance_level",
+        "proficiency_level"
       ]
     },
     {
-      "name": "tasks",
-      "table": "jaat_tasks",
-      "fixture": "tasks.json",
+      "name": "knowledge",
+      "table": "knowledge",
+      "fixture": "knowledge.json",
+      "primary_key": ["id"],
+      "columns": [
+        "id",
+        "code",
+        "name",
+        "description"
+      ],
+      "update_columns": [
+        "code",
+        "name",
+        "description"
+      ]
+    },
+    {
+      "name": "occupation_knowledge",
+      "table": "occupation_knowledge",
+      "fixture": "occupation_knowledge.json",
       "primary_key": [
-        "task_code"
+        "occupation_id",
+        "knowledge_id"
       ],
       "columns": [
+        "occupation_id",
+        "knowledge_id",
+        "importance_level"
+      ],
+      "update_columns": [
+        "importance_level"
+      ]
+    },
+    {
+      "name": "abilities",
+      "table": "abilities",
+      "fixture": "abilities.json",
+      "primary_key": ["id"],
+      "columns": [
+        "id",
+        "code",
+        "name",
+        "description"
+      ],
+      "update_columns": [
+        "code",
+        "name",
+        "description"
+      ]
+    },
+    {
+      "name": "jaat_tasks",
+      "table": "jaat_tasks",
+      "fixture": "tasks.json",
+      "primary_key": ["task_code"],
+      "columns": [
         "task_code",
-        "onet_soc_code",
+        "occupation_id",
         "description",
         "source"
       ],
       "update_columns": [
-        "onet_soc_code",
+        "occupation_id",
         "description",
         "source"
       ]

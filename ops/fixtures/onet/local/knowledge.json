@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "code": "1.A.1",
+    "name": "English Language",
+    "description": "Structure and content of the English language including spelling, composition, and grammar."
+  },
+  {
+    "id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    "code": "1.C.2",
+    "name": "Computer Science",
+    "description": "Knowledge of computing principles, algorithms, and data structures."
+  }
+]

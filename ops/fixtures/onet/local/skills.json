@@ -1,16 +1,24 @@
 [
   {
-    "skill_code": "2.A.1",
+    "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "code": "2.A.1",
     "name": "Active Listening",
+    "description": "Giving full attention to what other people are saying, taking time to understand points being made.",
     "category": "Basic Skills",
-    "description": "Giving full attention to what other people are saying, taking time to understand the points being made.",
-    "source": "O*NET 25.1"
+    "difficulty_level": 3,
+    "related_skills": [
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    ]
   },
   {
-    "skill_code": "2.C.1",
+    "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "code": "2.C.1",
     "name": "Programming",
+    "description": "Writing computer programs for various purposes and selecting the right tools for the work.",
     "category": "Technology Skills",
-    "description": "Writing computer programs for various purposes, selecting the right language and tools for the work.",
-    "source": "O*NET 25.1"
+    "difficulty_level": 4,
+    "related_skills": [
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    ]
   }
 ]
