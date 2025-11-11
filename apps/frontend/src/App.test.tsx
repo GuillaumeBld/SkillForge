@@ -4,11 +4,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { store } from './store/store';
-import * as api from './api/client';
+import { createQueryClient } from './api/queryClient';
 
-vi.mock('./api/client', () => ({
-  fetchHealth: vi.fn(() => Promise.resolve({ status: 'ok', timestamp: new Date().toISOString() }))
-}));
+const renderApp = (initialRoute = '/') => {
+  const queryClient = createQueryClient();
 
 describe('App routing and layout', () => {
   it('renders the learner dashboard within the layout shell and fetches health status', async () => {
