@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Box,
   Card,
   CardContent,
@@ -74,13 +73,27 @@ export const AdvisorConsole = () => {
       <Grid container spacing={4} alignItems="stretch">
         <Grid item xs={12} lg={8} className="space-y-4">
           {rosterError ? (
-            <Alert severity="error" role="alert" aria-live="assertive">
-              {rosterError}
-            </Alert>
+            <Box
+              role="alert"
+              aria-live="assertive"
+              tabIndex={0}
+              className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-rose-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:border-rose-400/40 dark:bg-rose-950/40 dark:text-rose-100"
+            >
+              <Typography component="p" variant="body2">
+                {rosterError}
+              </Typography>
+            </Box>
           ) : rosterRows.length === 0 ? (
-            <Alert severity="info" role="status" aria-live="polite">
-              No advisees assigned yet. Coordinate with partner success to import a cohort.
-            </Alert>
+            <Box
+              role="status"
+              aria-live="polite"
+              tabIndex={0}
+              className="rounded-3xl border border-sky-200 bg-sky-50 p-4 text-sky-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 dark:border-sky-400/40 dark:bg-sky-900/30 dark:text-sky-50"
+            >
+              <Typography component="p" variant="body2">
+                No advisees assigned yet. Coordinate with partner success to import a cohort.
+              </Typography>
+            </Box>
           ) : (
             <AdvisorRosterTable rows={rosterRows} onAssignAssessment={handleAssignAssessment} onAddNote={handleAddNote} />
           )}
@@ -102,7 +115,18 @@ export const AdvisorConsole = () => {
                 </ListItem>
                 <ListItem className="justify-between">
                   <ListItemText primary="Notes captured" secondary="18" />
-                  <Chip label="Needs review" color="warning" size="small" />
+                  <Chip
+                    label="Needs review"
+                    color="default"
+                    size="small"
+                    variant="filled"
+                    sx={{
+                      backgroundColor: '#fef3c7',
+                      border: '1px solid #f59e0b',
+                      color: '#78350f',
+                      '& .MuiChip-label': { fontWeight: 600 }
+                    }}
+                  />
                 </ListItem>
               </List>
               <Button
@@ -127,9 +151,16 @@ export const AdvisorConsole = () => {
                 Alerts & escalations
               </Typography>
               {alerts.length === 0 ? (
-                <Alert severity="success" role="status" aria-live="polite">
-                  No escalations pending. Keep monitoring partner feedback loops.
-                </Alert>
+                <Box
+                  role="status"
+                  aria-live="polite"
+                  tabIndex={0}
+                  className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-emerald-400/40 dark:bg-emerald-900/30 dark:text-emerald-100"
+                >
+                  <Typography component="p" variant="body2">
+                    No escalations pending. Keep monitoring partner feedback loops.
+                  </Typography>
+                </Box>
               ) : (
                 alerts.map((alert) => (
                   <Box key={alert.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-400/40 dark:bg-amber-900/30">

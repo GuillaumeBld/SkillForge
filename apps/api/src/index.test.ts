@@ -10,6 +10,74 @@ jest.mock('./observability/tracing', () => {
   };
 });
 
+jest.mock('bullmq', () => {
+  class FakeQueue {
+    public jobs: unknown[] = [];
+
+    constructor(public name: string) {}
+
+    async add(name: string, payload: unknown) {
+      this.jobs.push(payload);
+      return { name, data: payload };
+    }
+
+    async close() {
+      return undefined;
+    }
+  }
+
+  class FakeQueueEvents {
+    constructor(public name: string) {}
+
+    on() {
+      return this;
+    }
+
+    async close() {
+      return undefined;
+    }
+  }
+
+  class FakeWorker {
+    constructor(public name: string) {}
+
+    async close() {
+      return undefined;
+    }
+  }
+
+  return {
+    __esModule: true,
+    Queue: FakeQueue,
+    QueueEvents: FakeQueueEvents,
+    Worker: FakeWorker
+  };
+});
+
+jest.mock('ioredis', () => {
+  class FakeRedis {
+    public status = 'ready';
+
+    duplicate() {
+      return new FakeRedis();
+    }
+
+    on() {
+      return this;
+    }
+
+    connect() {
+      return Promise.resolve();
+    }
+  }
+
+  return {
+    __esModule: true,
+    default: FakeRedis,
+    Redis: FakeRedis
+  };
+});
+
 import type { Express } from 'express';
 import request from 'supertest';
 import { getThrottler, SLA_LIMITS } from './middleware';

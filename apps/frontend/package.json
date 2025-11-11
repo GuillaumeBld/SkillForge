@@ -7,11 +7,19 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "preview:ci": "vite preview --host 0.0.0.0 --port 4173 --strictPort",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test --config e2e/playwright.config.ts",
+    "e2e:ci": "playwright test --config e2e/playwright.config.ts --reporter=line",
+    "check:e2e": "start-server-and-test preview:ci http://127.0.0.1:4173/learners/dashboard e2e:ci",
+    "test:axe": "playwright test --config e2e/playwright.config.ts --reporter=line --grep @axe",
+    "check:accessibility": "start-server-and-test preview:ci http://127.0.0.1:4173/learners/dashboard test:axe",
+    "test:lighthouse": "node ./scripts/run-lhci.mjs",
+    "check:performance": "start-server-and-test preview:ci http://127.0.0.1:4173/learners/dashboard test:lighthouse"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -37,6 +45,9 @@
     "tailwindcss": "^3.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.9.1",
+    "@lhci/cli": "^0.13.0",
+    "@playwright/test": "^1.46.0",
     "@testing-library/jest-dom": "^6.4.1",
     "@testing-library/react": "^14.2.1",
     "@types/react": "^18.2.64",
@@ -48,6 +59,7 @@
     "eslint-plugin-react": "^7.34.1",
     "eslint-plugin-react-hooks": "^4.6.0",
     "jsdom": "^24.0.0",
+    "start-server-and-test": "^2.0.4",
     "postcss": "^8.4.35",
     "typescript": "5.5.4",
     "vite": "^5.1.6",

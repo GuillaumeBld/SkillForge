@@ -49,5 +49,21 @@ jobs:
         run: npm run lint
       - name: Type check
         run: npm run typecheck
-      - name: Run tests
-        run: npm run test
+      - name: Unit tests (frontend)
+        run: npm run test --workspace @skillforge/frontend
+      - name: Integration tests (api)
+        run: npm run test --workspace @skillforge/api
+      - name: Build frontend for preview
+        run: npm run build --workspace @skillforge/frontend
+      - name: Install Playwright browsers
+        working-directory: apps/frontend
+        run: npx playwright install --with-deps
+      - name: End-to-end tests
+        working-directory: apps/frontend
+        run: npm run check:e2e
+      - name: Accessibility checks (axe)
+        working-directory: apps/frontend
+        run: npm run check:accessibility
+      - name: Lighthouse performance budgets
+        working-directory: apps/frontend
+        run: npm run check:performance
