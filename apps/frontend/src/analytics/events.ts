@@ -1,4 +1,9 @@
-export type Persona = "student" | "career_changer" | "advisor";
+export type Persona =
+  | "student"
+  | "career_changer"
+  | "advisor"
+  | "partner_admin"
+  | "marketing";
 
 export interface AnalyticsEventPayload {
   eventName: string;
@@ -39,5 +44,10 @@ export const ANALYTICS_EVENTS = {
   careerMatchViewed: "career_match_viewed",
   advisorNoteAdded: "advisor_note_added",
   cohortAssessmentAssigned: "cohort_assessment_assigned",
-  partnerImportUploaded: "partner_import_uploaded"
+  partnerImportUploaded: "partner_import_uploaded",
+  learnerDashboardViewed: "learner_dashboard_viewed",
+  advisorConsoleViewed: "advisor_console_viewed",
+  partnerOnboardingViewed: "partner_onboarding_viewed",
+  marketingLandingViewed: "marketing_landing_viewed",
+  navigationItemSelected: "navigation_item_selected"
 } as const;
