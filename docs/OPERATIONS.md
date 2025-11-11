@@ -141,6 +141,18 @@
 - Run `kubectl -n observability annotate configmap grafana-dashboards skillforge.io/baseline-sync=$(git rev-parse HEAD)` after syncing dashboards to capture audit trace.
 - Execute weekly synthetic traffic in staging before release freeze and compare baseline panels against production to ensure regressions are identified ahead of promotion.
 
+### 4.5 Post-Launch 72-Hour Guardrails
+- **Search latency variance (2025-11-11 17:45 UTC):** Production search P95 briefly breached the ≤350 ms target (peaked at 361 ms) under EU onboarding surge. Mitigation playbook:
+  1. Scale `search-api` deployment from 6→9 replicas via `kubectl -n api scale deployment search-api --replicas=9`.
+  2. Trigger cache prewarm job `kubectl -n api create job --from=cronjob/search-cache-warm search-cache-warm-manual-$(date +%s)` to repopulate top occupation queries.
+  3. Monitor `search_latency_p95` and `cache_hit_ratio` panels in Grafana for 15 minutes; confirm return to <340 ms sustained.
+  4. Reduce replicas once traffic normalises but keep HPA min replicas at 7 during EU peak windows (08:00–12:00 UTC) via Helm values override committed to GitOps repo.
+- **Kafka analytics backlog (2025-11-11 18:20 UTC):** Alert triggered when `analytics_events_ingested_total` lagged `_staging_baseline` by >10 minutes. Response:
+  1. Scale consumer Deployment `analytics-event-router` from 2→4 replicas (`kubectl -n data-pipelines scale deployment analytics-event-router --replicas=4`).
+  2. Update `ops/observability/prometheus-alerts.yaml` to add saturation alert `analytics_consumer_lag_seconds > 300` for 5 minutes with PagerDuty routing.
+  3. Annotate Grafana dashboard `Analytics Pipeline Health` with incident timeline and mitigation link in Confluence.
+  4. Review backlog metrics during KPI sync; revert replicas only after 24h of sustained <120 s lag.
+
 ## 5. Contact & Resources
 - Incident channel: `#skillforge-incident` (Slack/Teams) with PagerDuty integration.
 - Knowledge base: Confluence space `SkillForge Ops` for detailed runbooks and diagrams.

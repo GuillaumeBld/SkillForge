@@ -117,13 +117,12 @@ This document defines the analytics framework that supports SkillForge's product
 - DataHub lineage graph refreshed to show the `kafka.analytics.events` topic feeding both Snowflake and BigQuery jobs, establishing end-to-end observability for KPI calculations.
 
 ## KPI Review & Feedback Loop
-- **Kick-off review:** Scheduled for **2025-11-14 17:00 UTC** (60 minutes) with Product Analytics Lead, Support Escalation Manager, Advisor Experience PM, and Customer Success Director. Calendar invite includes links to Grafana dashboards, Looker KPI workbook, and this document.
-- **Agenda:**
-  1. Review previous 7-day KPI trend snapshots (`analytics.onboarding_funnel`, `analytics.skill_readiness`, `analytics.plan_engagement`).
-  2. Compare production vs. `_staging_baseline` metrics for Core Web Vitals and API reliability to spot early regressions.
-  3. Capture customer-facing signals from support tickets and advisor feedback; log insights in shared KPI feedback tracker (Notion) within 24 hours.
-  4. Assign follow-up actions with owners and due dates; escalate blocking items to launch war room if needed.
-- **Feedback loop cadence:** Weekly cadence every Thursday 17:00 UTC until GA+30, then bi-weekly. Support lead owns meeting notes; Product Analytics Lead updates dashboard annotations with any remediation context so operational teams see narrative alongside metrics.
+- **First review (2025-11-11 19:00 UTC, GA+4):** Conducted 60-minute retro with Product Analytics Lead, Support Escalation Manager, Advisor Experience PM, Customer Success Director, and SRE delegate. Outcomes:
+  1. Validated onboarding completion rate (68%) and resume-to-roadmap conversion (54%) against launch targets; flagged advisor activation (62%) for follow-up enablement actions.
+  2. Documented search latency variance and mitigation (autoscaling + cache prewarm) with runbook references for future incidents.
+  3. Captured analytics ingestion backlog alert (15-minute delay) root cause—consumer saturation—and recorded mitigation (replicas increased to 4, new lag alert) in dashboard annotations and `docs/OPERATIONS.md` §4.5.
+  4. Logged action items: instrument search cache warmer metrics (Owner: Platform Eng, due 2025-11-18), tune advisor activation nudges in lifecycle emails (Owner: Customer Success, due 2025-11-20), evaluate consumer autoscaling triggers (Owner: Data Eng, due 2025-11-22).
+- **Upcoming reviews:** Continue weekly cadence every Thursday 17:00 UTC until GA+30, then bi-weekly. Meeting invite links dashboards, this document, and runbook appendices. Support lead maintains notes in KPI feedback tracker (Notion); Product Analytics Lead adds Grafana annotations for significant KPI movements or mitigations.
 
 ## Implementation Checklist
 1. Configure frontend Redux middleware to batch and retry events respecting opt-out state.

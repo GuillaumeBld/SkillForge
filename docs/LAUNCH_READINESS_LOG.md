@@ -2,6 +2,10 @@
 
 | Timestamp (UTC) | Operation | Status | Notes |
 | --- | --- | --- | --- |
+| 2025-11-11T19:00:00Z | KPI & retrospection review (GA+4) | Completed | Facilitated cross-functional review of first 72h KPIs; captured actions in `docs/ANALYTICS.md` and `docs/OPERATIONS.md` including search autoscaling guardrail and analytics backlog alert tuning. |
+| 2025-11-11T18:20:00Z | Analytics ingestion backlog alert | Mitigated | Detected `analytics_events_ingested_total` lag vs. `_staging_baseline` (15 min delay) due to under-provisioned consumer workers; increased Kafka consumer replicas from 2→4 and added saturation alert documented in `docs/ANALYTICS.md`. |
+| 2025-11-11T17:45:00Z | Production metrics variance audit (0–72h) | Completed | Reviewed GA+72h metrics vs. thresholds: Auth P95 242 ms (≤250 ms target), Search P95 peaked 361 ms vs. ≤350 ms target (mitigated via autoscaling), API error rate 0.4% (<1% threshold), queue depth max 280 (<500 threshold), Redis hit ratio ≥90%. Logged follow-ups in readiness appendix. |
+| 2025-11-11T17:30:00Z | Grafana/Looker dashboard validation | Completed | Confirmed KPI dashboards and alerting stayed green; added 72h annotation and dashboard link-out to post-launch retro notes. |
 | 2025-11-10T09:30:00Z | KPI feedback loop kickoff invite | Completed | Scheduled 2025-11-14 KPI review with product analytics, support escalation, advisor experience, and customer success stakeholders; agenda and dashboards linked in `docs/ANALYTICS.md` §"KPI Review & Feedback Loop". |
 | 2025-11-10T09:10:00Z | Production analytics parity audit | Completed | Compared `analytics_events_ingested_total{environment="prod"}` vs. `_staging_baseline` in Grafana; documented ≤1.6% delta confirmation and response workflow in `docs/ANALYTICS.md`. |
 | 2025-11-10T08:45:00Z | Staging baseline rollup refresh | Completed | Extended Prometheus recording rules to cover frontend Core Web Vitals and Kubernetes capacity, updating dashboards to consume `_staging_baseline` series per `ops/observability/`. |
