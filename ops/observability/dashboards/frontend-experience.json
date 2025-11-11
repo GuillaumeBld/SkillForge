@@ -12,8 +12,8 @@
           "legendFormat": "Prod TTI"
         },
         {
-          "expr": "max(core_web_vitals_tti_seconds{environment=\"staging\"})",
-          "legendFormat": "Staging TTI"
+          "expr": "frontend:tti_seconds:max_staging_baseline",
+          "legendFormat": "Staging Baseline TTI"
         }
       ],
       "title": "Time to Interactive",
@@ -30,8 +30,8 @@
           "legendFormat": "Prod CLS"
         },
         {
-          "expr": "avg(core_web_vitals_cls_score{environment=\"staging\"})",
-          "legendFormat": "Staging CLS"
+          "expr": "frontend:cls_score:avg_staging_baseline",
+          "legendFormat": "Staging Baseline CLS"
         }
       ],
       "title": "Cumulative Layout Shift",

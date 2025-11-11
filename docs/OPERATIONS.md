@@ -136,6 +136,7 @@
 
 ### 4.4 Staging-to-Production Baseline Promotion
 - Apply recording rules (`ops/observability/prometheus-baselines.yaml`) in staging and production clusters so that staging metrics populate `_staging_baseline` time-series in the shared Prometheus instance.
+- Ensure the recording rules include `frontend:tti_seconds:max_staging_baseline`, `frontend:cls_score:avg_staging_baseline`, and Kubernetes capacity baselines so Grafana panels align with production comparisons.
 - Confirm Grafana provisioning (`ops/observability/`) references the shared dashboards folder and lists both production and staging series for every panel.
 - Run `kubectl -n observability annotate configmap grafana-dashboards skillforge.io/baseline-sync=$(git rev-parse HEAD)` after syncing dashboards to capture audit trace.
 - Execute weekly synthetic traffic in staging before release freeze and compare baseline panels against production to ensure regressions are identified ahead of promotion.
