@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import { DEVELOPMENT_PARTNER_CREDENTIALS } from './config/default-partner-credentials';
 
 type Environment = 'production' | 'sandbox';
 
@@ -14,26 +15,15 @@ export interface PartnerContext {
   environment: Environment;
 }
 
-const DEFAULT_CREDENTIALS: PartnerCredential[] = [
-  {
-    partnerId: 'workforce-agency-17',
-    apiKey: 'sk_live_123',
-    apiSecret: 'sh_live_456',
-    sandboxEnabled: true
-  },
-  {
-    partnerId: 'enterprise-analytics-88',
-    apiKey: 'sk_live_789',
-    apiSecret: 'sh_live_012',
-    sandboxEnabled: true
-  }
-];
-
 function parseCredentials(): PartnerCredential[] {
   const envValue = process.env.PARTNER_CREDENTIALS;
 
   if (!envValue) {
-    return DEFAULT_CREDENTIALS;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('PARTNER_CREDENTIALS must be configured in production environments');
+    }
+
+    return DEVELOPMENT_PARTNER_CREDENTIALS;
   }
 
   try {

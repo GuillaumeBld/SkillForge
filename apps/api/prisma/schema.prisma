@@ -150,3 +150,77 @@ model Notification {
   @@index([userId])
   @@index([status])
 }
+
+model PartnerCandidateBatch {
+  id          String   @id
+  partnerId   String
+  environment String
+  webhookUrl  String?
+  processed   Int
+  failed      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  results     PartnerCandidateResult[]
+
+  @@index([partnerId, environment])
+}
+
+model PartnerCandidateResult {
+  id                String   @id @default(cuid())
+  batchId           String
+  externalId        String
+  status            String
+  candidateId       String?
+  jaatVectorVersion String?
+  error             String?
+  createdAt         DateTime @default(now())
+  batch             PartnerCandidateBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+}
+
+model PartnerAssessment {
+  id               String   @id
+  partnerId        String
+  environment      String
+  candidateId      String
+  templateId       String
+  deliveryMode     String
+  dueAt            DateTime?
+  notifyCandidate  Boolean?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([partnerId, environment])
+}
+
+model PartnerBatchAssessment {
+  id           String   @id
+  partnerId    String
+  environment  String
+  cohortId     String
+  templateId   String
+  candidateIds String[]
+  windowStart  DateTime?
+  windowEnd    DateTime?
+  queued       Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([partnerId, environment])
+}
+
+model PartnerPlacement {
+  id             String   @id
+  partnerId      String
+  environment    String
+  candidateId    String
+  jobId          String
+  employerName   String
+  placementDate  String
+  employmentType String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([partnerId, environment])
+}

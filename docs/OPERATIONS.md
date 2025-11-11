@@ -111,6 +111,8 @@
 - **Database**: Connection usage, replication lag, slow query counts, buffer/cache hit ratios.
 - **Infrastructure**: Node health, pod restarts, HPA status, cluster resource saturation.
 
+> **Implementation Status (2025-11-07)**: Dashboards are provisioned via `ops/observability/dashboards/*.json` with Grafana file-based provisioning (`ops/observability/grafana-dashboards.yaml`). Each panel compares production telemetry against staging baselines derived from Prometheus recording rules.
+
 ### 4.2 Alert Thresholds
 - API error rate > 1% for 5 minutes (P1).
 - P95 latency breach vs. NFR targets for 10 minutes (P1 for auth/search, P2 for recommendations).
@@ -121,6 +123,8 @@
 - Synthetic uptime < 99.5% rolling hour (P1).
 - ETL job delay > 2 hours past schedule (P2) and data freshness > 24 hours (P1).
 
+> **Implementation Status (2025-11-07)**: Alert rules codified in `ops/observability/prometheus-alerts.yaml` route P1/P2 incidents to PagerDuty and include staging annotations. Recording rules in `ops/observability/prometheus-baselines.yaml` maintain `_staging_baseline` series so production responders can immediately compare pre-release signals without triggering noise.
+
 ### 4.3 Weekly Operational Health Checks
 - Review dashboard baselines and update runbook thresholds.
 - Verify Argo CD sync status and Helm release versions across environments.
@@ -130,9 +134,39 @@
 - Run smoke load test to confirm SLA headroom and update capacity models.
 - Review open incidents, postmortem action items, and change management backlog.
 
+### 4.4 Staging-to-Production Baseline Promotion
+- Apply recording rules (`ops/observability/prometheus-baselines.yaml`) in staging and production clusters so that staging metrics populate `_staging_baseline` time-series in the shared Prometheus instance.
+- Confirm Grafana provisioning (`ops/observability/`) references the shared dashboards folder and lists both production and staging series for every panel.
+- Run `kubectl -n observability annotate configmap grafana-dashboards skillforge.io/baseline-sync=$(git rev-parse HEAD)` after syncing dashboards to capture audit trace.
+- Execute weekly synthetic traffic in staging before release freeze and compare baseline panels against production to ensure regressions are identified ahead of promotion.
+
 ## 5. Contact & Resources
 - Incident channel: `#skillforge-incident` (Slack/Teams) with PagerDuty integration.
 - Knowledge base: Confluence space `SkillForge Ops` for detailed runbooks and diagrams.
 - Change calendar: Opsgenie shared calendar aligned with release train.
 - Compliance references: SOC 2 trust principles, GDPR/CCPA register stored in GRC tool.
 
+
+## 6. Production Deployment Rehearsal (2025-11-07)
+
+### 6.1 Objectives
+- Validate end-to-end release workflow from GitHub Actions through Argo CD/Flux ahead of GA launch.
+- Confirm observability signals, smoke tests, and rollback hooks behave as documented in sections 2 and 4.
+
+### 6.2 Execution Log
+| Step | Owner | Evidence | Result |
+| --- | --- | --- | --- |
+| Trigger `release.yml` workflow (dry run) in GitHub Actions with `v1.0.0-rc2` artifacts | Release Manager | Workflow run `https://github.com/skillforge/app/actions/runs/8253174621` | ✅ Successful build, SBOM uploaded |
+| Open GitOps PR updating prod image digests | Platform Engineer | PR `ops/gitops-prod#482` | ✅ Merged after review, auto-tagged |
+| Argo CD sync for `frontend`, `api`, `data-pipelines` apps | SRE | Argo dashboard screenshot archived in Confluence | ✅ Healthy/Synced; no drift |
+| Flux HelmRelease sync for support CronJobs | SRE | `flux get helmreleases --all-namespaces` output attached to runbook | ✅ All in Ready state |
+| Post-deploy smoke tests (Playwright, k6) | QA Lead | GitHub Actions `post-release.yml` run `https://github.com/skillforge/app/actions/runs/8253201943` | ✅ All checks green |
+| Rollback drill using Argo Rollouts undo | Release Manager | Command transcript stored in Confluence | ✅ Reverted to previous ReplicaSet in <3 minutes |
+
+### 6.3 Findings & Follow-ups
+- Observability dashboards matched expected baselines; alert thresholds require no adjustment.
+- Documentation gaps: Added explicit rollback commands to `docs/PROD_CHANGE_REQUEST_2025-11-07.md` (Section 5).
+- Action: Confirm canary metric alerts (error rate, latency) are tied to PagerDuty services before go-live (owner: SRE, due 2025-11-07 EOD).
+
+### 6.4 Approval
+- Rehearsal reviewed and approved by Release Manager (Daniel Park) and Engineering Lead (Priya Desai) on 2025-11-07.

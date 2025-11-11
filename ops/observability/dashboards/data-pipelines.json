@@ -1,0 +1,63 @@
+{
+  "annotations": {"list": []},
+  "panels": [
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 20,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, job) (rate(data_pipeline_job_duration_seconds_bucket{environment=\"prod\"}[15m])))",
+          "legendFormat": "{{job}} Prod"
+        },
+        {
+          "expr": "data_pipeline:job_duration_seconds:p95_staging_baseline",
+          "legendFormat": "{{job}} Staging Baseline"
+        }
+      ],
+      "title": "ETL Job Duration P95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 21,
+      "targets": [
+        {
+          "expr": "max(job_queue_depth{environment=\"prod\", queue=~\"(etl|notification)\"})",
+          "legendFormat": "{{queue}} Prod"
+        },
+        {
+          "expr": "max(job_queue_depth{environment=\"staging\", queue=~\"(etl|notification)\"})",
+          "legendFormat": "{{queue}} Staging"
+        }
+      ],
+      "title": "Queue Depth",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "hour"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 22,
+      "targets": [
+        {
+          "expr": "max(data_pipeline_freshness_hours{environment=\"prod\"})",
+          "legendFormat": "Prod Freshness"
+        },
+        {
+          "expr": "max(data_pipeline_freshness_hours{environment=\"staging\"})",
+          "legendFormat": "Staging Freshness"
+        }
+      ],
+      "title": "Data Freshness",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 37,
+  "time": {"from": "now-48h", "to": "now"},
+  "title": "Data Pipelines",
+  "version": 1
+}

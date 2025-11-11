@@ -1,0 +1,63 @@
+{
+  "annotations": {"list": []},
+  "panels": [
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 30,
+      "targets": [
+        {
+          "expr": "avg(postgres_replication_lag_seconds{environment=\"prod\"})",
+          "legendFormat": "Prod Replication Lag"
+        },
+        {
+          "expr": "avg(postgres_replication_lag_seconds{environment=\"staging\"})",
+          "legendFormat": "Staging Replication Lag"
+        }
+      ],
+      "title": "Replication Lag",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 31,
+      "targets": [
+        {
+          "expr": "avg(rate(postgres_transactions_total{environment=\"prod\"}[5m]))",
+          "legendFormat": "Prod TPS"
+        },
+        {
+          "expr": "avg(rate(postgres_transactions_total{environment=\"staging\"}[5m]))",
+          "legendFormat": "Staging TPS"
+        }
+      ],
+      "title": "Transactions per Second",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 32,
+      "targets": [
+        {
+          "expr": "avg(postgres_connection_usage_percent{environment=\"prod\"})",
+          "legendFormat": "Prod Connection Usage"
+        },
+        {
+          "expr": "avg(postgres_connection_usage_percent{environment=\"staging\"})",
+          "legendFormat": "Staging Connection Usage"
+        }
+      ],
+      "title": "Connection Pool Utilisation",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 37,
+  "time": {"from": "now-24h", "to": "now"},
+  "title": "Database Health",
+  "version": 1
+}

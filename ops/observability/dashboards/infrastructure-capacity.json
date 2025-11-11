@@ -1,0 +1,63 @@
+{
+  "annotations": {"list": []},
+  "panels": [
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 40,
+      "targets": [
+        {
+          "expr": "avg(node_cpu_utilisation_percent{environment=\"prod\"})",
+          "legendFormat": "Prod CPU"
+        },
+        {
+          "expr": "avg(node_cpu_utilisation_percent{environment=\"staging\"})",
+          "legendFormat": "Staging CPU"
+        }
+      ],
+      "title": "Node CPU Utilisation",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 41,
+      "targets": [
+        {
+          "expr": "avg(kube_deployment_status_replicas_unavailable{environment=\"prod\"})",
+          "legendFormat": "Prod Unavailable"
+        },
+        {
+          "expr": "avg(kube_deployment_status_replicas_unavailable{environment=\"staging\"})",
+          "legendFormat": "Staging Unavailable"
+        }
+      ],
+      "title": "Replica Availability",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 42,
+      "targets": [
+        {
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{environment=\"prod\"}[1h]))",
+          "legendFormat": "Prod Restarts"
+        },
+        {
+          "expr": "k8s:pod_restart_rate_staging_baseline",
+          "legendFormat": "Staging Baseline Restarts"
+        }
+      ],
+      "title": "Pod Restarts",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 37,
+  "time": {"from": "now-24h", "to": "now"},
+  "title": "Infrastructure Capacity",
+  "version": 1
+}
