@@ -1,8 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { store } from './store/store';
 import { createQueryClient } from './api/queryClient';
@@ -10,28 +9,28 @@ import { createQueryClient } from './api/queryClient';
 const renderApp = (initialRoute = '/') => {
   const queryClient = createQueryClient();
 
-  return render(
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[initialRoute]}>
+describe('App routing and layout', () => {
+  it('renders the learner dashboard within the layout shell and fetches health status', async () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/learners/dashboard']}>
           <App />
         </MemoryRouter>
-      </QueryClientProvider>
-    </Provider>
-  );
-};
+      </Provider>
+    );
 
-describe('App shell', () => {
-  it('renders onboarding wizard by default', async () => {
-    renderApp();
+    expect(
+      await screen.findByRole('heading', {
+        name: /personalized SkillForge plan/i
+      })
+    ).toBeInTheDocument();
 
-    expect(await screen.findByText(/Onboarding wizard/i)).toBeInTheDocument();
-    expect(screen.getByRole('navigation')).toBeInTheDocument();
-  });
+    expect(
+      await screen.findByRole('navigation', {
+        name: /primary/i
+      })
+    ).toBeInTheDocument();
 
-  it('navigates to student dashboard route', async () => {
-    renderApp('/dashboard');
-
-    expect(await screen.findByRole('heading', { name: /Student dashboard/i })).toBeInTheDocument();
+    await waitFor(() => expect(api.fetchHealth).toHaveBeenCalled());
   });
 });

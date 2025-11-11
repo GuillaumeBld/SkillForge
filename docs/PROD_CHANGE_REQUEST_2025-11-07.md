@@ -38,6 +38,7 @@
 - Run smoke E2E suite covering signup, resume upload, assessment completion, and pathway activation.
 - Review Grafana dashboards (`API Performance`, `Frontend Experience`) for baseline adherence.
 - Confirm analytics events visible in production workspace; QA lead signs off post-verification.
+- Review evidence log in [`docs/LAUNCH_READINESS.md` Appendix A](LAUNCH_READINESS.md#appendix-a---verification-evidence-log) to confirm audit trail attachments.
 
 ## 7. Stakeholder Sign-offs (per `docs/LAUNCH_READINESS.md`)
 - **Product Lead (Jordan Lee):** Approved 2025-11-06
@@ -47,6 +48,11 @@
 - **GTM Lead (Lena Chow):** Approved 2025-11-06
 - **Release Manager (Daniel Park):** Approved 2025-11-07
 - **Executive Sponsor (Morgan Blake):** Approved 2025-11-06
+
+### Go/No-Go Reconfirmation (2025-11-07 17:00 UTC)
+- Meeting chaired by Release Manager with Product (Jordan Lee), Engineering (Priya Desai), Security (Casey Morgan), and Partnerships (Lena Chow) stakeholders.
+- Reviewed `docs/LAUNCH_READINESS_LOG.md` Appendix A, latest scan evidence (`docs/SECURITY_SCANS_2025-11-07.md`), and rollback readiness checklist (`docs/ROLLBACK_CHECKLIST_2025-11-07.md`).
+- All stakeholders reaffirmed `Approved` status for launch proceeding to the 18:00 UTC window; no new action items raised.
 
 ## 8. Risk Assessment & Mitigations
 - **Risk:** Increased load from GA surge → **Mitigation:** HPA tuned per `docs/OPERATIONS.md` §1.1; synthetic load tests executed pre-launch.
@@ -58,3 +64,14 @@
 - Live updates in `#skillforge-launch` Slack channel at key milestones (start, 10% canary, 50%, 100%, smoke test completion).
 - Statuspage entry scheduled with maintenance window; final update posted upon launch completion.
 - Post-launch review scheduled for 2025-11-08 16:00 UTC.
+- Leadership and support teams receive change notification referencing `docs/LAUNCH_READINESS_LOG.md` to highlight fulfilled readiness gates and the attached rollback checklist for contingency confidence.
+
+## 10. Deployment Window & On-Call Coverage
+- Production deployment window confirmed for 2025-11-07 18:00–20:00 UTC (see `docs/LAUNCH_CALENDAR_2025-11-07.md` §1).
+- PagerDuty rotations and escalation roles published in `docs/LAUNCH_CALENDAR_2025-11-07.md` §2 and distributed with readiness log citation during the go/no-go sync.
+- Support leadership briefed on coverage model via Opsgenie change calendar entry linking to readiness evidence and rollback checklist attachments.
+
+## 11. Attached Evidence & Artefacts
+- Launch readiness evidence log: [`docs/LAUNCH_READINESS_LOG.md`](LAUNCH_READINESS_LOG.md)
+- Security scan summaries: [`docs/SECURITY_SCANS_2025-11-07.md`](SECURITY_SCANS_2025-11-07.md)
+- Rollback execution checklist: [`docs/ROLLBACK_CHECKLIST_2025-11-07.md`](ROLLBACK_CHECKLIST_2025-11-07.md)

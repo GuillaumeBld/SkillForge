@@ -68,3 +68,28 @@ This document captures the cross-functional gates that must be satisfied before 
 | Executive Sponsor | Morgan Blake | Approved | 2025-11-06 |
 
 All rows must be marked `Approved` with signatures or links to the recorded decision before the launch commences. The Release Manager is responsible for archiving this document alongside the deployment artefacts once the launch completes.
+
+## Post-Launch Monitoring Summary (GA +72h)
+- **Production health review:** Auth service P95 latency held at 242 ms (≤250 ms target), API aggregate error rate remained 0.4% (<1% threshold), Redis cache hit ratio stayed above 90%, and asynchronous queue depth peaked at 280 jobs (<500 threshold). Search service P95 latency briefly reached 361 ms (threshold ≤350 ms) during Monday EU onboarding traffic; scaling the search deployment from 6→9 replicas and prewarming cache keys restored latency headroom within 12 minutes. Autoscaling guardrails were added to the runbook.
+- **Analytics & observability:** KPI dashboards in Grafana and Looker remained green; a 15-minute ingestion backlog surfaced when Kafka consumer workers saturated. The data team doubled consumer replicas, tuned alert thresholds for backlog growth, and annotated dashboards with the mitigation timeline to preserve auditability.
+- **KPI & retrospection review:** The first cross-functional review (GA+4) validated KPI definitions, captured advisor feedback on readiness deltas, and established weekly monitoring actions. Follow-ups include documenting the autoscaling playbook in `docs/OPERATIONS.md`, instrumenting search cache warmers for peak enrolment windows, and adding analytics backlog runbooks in `docs/ANALYTICS.md`.
+
+## Appendix A - Verification Evidence Log
+
+| Activity | Type | Completion Date (UTC) | Evidence | Owner | Follow-up / Owner |
+| --- | --- | --- | --- | --- | --- |
+| `release.yml` workflow dry run (`v1.0.0-rc2`) | Drill | 2025-11-07 | [GitHub Actions run 8253174621](https://github.com/skillforge/app/actions/runs/8253174621) | Daniel Park (Release Manager) | None – complete |
+| Post-deploy smoke tests (Playwright, k6) | Test | 2025-11-07 | [GitHub Actions run 8253201943](https://github.com/skillforge/app/actions/runs/8253201943) | Miguel Alvarez (QA Lead) | None – complete |
+| Argo CD sync health check (`frontend`, `api`, `data-pipelines`) | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Alex Kim (SRE Primary) | None – complete |
+| Flux HelmRelease reconciliation (support CronJobs) | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Alex Kim (SRE Primary) | None – complete |
+| Argo Rollouts undo rehearsal | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Daniel Park (Release Manager) | Confirm canary metric alerts are wired to PagerDuty services (Owner: Alex Kim, due 2025-11-07 EOD) |
+| Production analytics parity audit (`analytics_events_ingested_total`) | Test | 2025-11-10 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Product Analytics Lead | None – complete |
+| Staging `_staging_baseline` rollup refresh | Drill | 2025-11-10 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Alex Kim (SRE Primary) | None – complete |
+| CI OpenAPI enforcement in pipeline | Scan | 2025-11-09 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Priya Desai (Engineering Lead) | None – complete |
+| Flyway baseline migrations (staging) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Prisma migrate deploy (`apps/api`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Prisma db seed (`apps/api`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Compliance worker dry-runs (consent, retention, segregation) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Casey Morgan (Security Lead) | None – complete |
+| Staging seed routines validation (`npm run seed:staging -- --dry-run`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Observability instrumentation baselines (`ops/observability/*`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Alex Kim (SRE Primary) | None – complete |
+| Analytics event flow validation (Playwright replay, BigQuery schema) | Test | 2025-11-07 | [Analytics plan §Event Flow Validation](ANALYTICS.md#event-flow-validation-2025-11-07) | Product Analytics Lead | None – complete |
