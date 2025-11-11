@@ -38,6 +38,7 @@
 - Run smoke E2E suite covering signup, resume upload, assessment completion, and pathway activation.
 - Review Grafana dashboards (`API Performance`, `Frontend Experience`) for baseline adherence.
 - Confirm analytics events visible in production workspace; QA lead signs off post-verification.
+- Review evidence log in [`docs/LAUNCH_READINESS.md` Appendix A](LAUNCH_READINESS.md#appendix-a---verification-evidence-log) to confirm audit trail attachments.
 
 ## 7. Stakeholder Sign-offs (per `docs/LAUNCH_READINESS.md`)
 - **Product Lead (Jordan Lee):** Approved 2025-11-06

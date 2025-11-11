@@ -68,3 +68,23 @@ This document captures the cross-functional gates that must be satisfied before 
 | Executive Sponsor | Morgan Blake | Approved | 2025-11-06 |
 
 All rows must be marked `Approved` with signatures or links to the recorded decision before the launch commences. The Release Manager is responsible for archiving this document alongside the deployment artefacts once the launch completes.
+
+## Appendix A - Verification Evidence Log
+
+| Activity | Type | Completion Date (UTC) | Evidence | Owner | Follow-up / Owner |
+| --- | --- | --- | --- | --- | --- |
+| `release.yml` workflow dry run (`v1.0.0-rc2`) | Drill | 2025-11-07 | [GitHub Actions run 8253174621](https://github.com/skillforge/app/actions/runs/8253174621) | Daniel Park (Release Manager) | None – complete |
+| Post-deploy smoke tests (Playwright, k6) | Test | 2025-11-07 | [GitHub Actions run 8253201943](https://github.com/skillforge/app/actions/runs/8253201943) | Miguel Alvarez (QA Lead) | None – complete |
+| Argo CD sync health check (`frontend`, `api`, `data-pipelines`) | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Alex Kim (SRE Primary) | None – complete |
+| Flux HelmRelease reconciliation (support CronJobs) | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Alex Kim (SRE Primary) | None – complete |
+| Argo Rollouts undo rehearsal | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Daniel Park (Release Manager) | Confirm canary metric alerts are wired to PagerDuty services (Owner: Alex Kim, due 2025-11-07 EOD) |
+| Production analytics parity audit (`analytics_events_ingested_total`) | Test | 2025-11-10 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Product Analytics Lead | None – complete |
+| Staging `_staging_baseline` rollup refresh | Drill | 2025-11-10 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Alex Kim (SRE Primary) | None – complete |
+| CI OpenAPI enforcement in pipeline | Scan | 2025-11-09 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Priya Desai (Engineering Lead) | None – complete |
+| Flyway baseline migrations (staging) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Prisma migrate deploy (`apps/api`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Prisma db seed (`apps/api`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Compliance worker dry-runs (consent, retention, segregation) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Casey Morgan (Security Lead) | None – complete |
+| Staging seed routines validation (`npm run seed:staging -- --dry-run`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Observability instrumentation baselines (`ops/observability/*`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Alex Kim (SRE Primary) | None – complete |
+| Analytics event flow validation (Playwright replay, BigQuery schema) | Test | 2025-11-07 | [Analytics plan §Event Flow Validation](ANALYTICS.md#event-flow-validation-2025-11-07) | Product Analytics Lead | None – complete |
