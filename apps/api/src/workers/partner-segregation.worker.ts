@@ -1,5 +1,6 @@
 import type { Job } from 'bullmq';
 import type { Prisma } from '@prisma/client';
+import type { InputJsonValue } from '@prisma/client/runtime/library';
 
 import prisma from '../config/prisma';
 import { registerQueue } from '../config/queue';
