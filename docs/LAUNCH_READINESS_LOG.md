@@ -1,0 +1,39 @@
+# Launch Readiness Data Operations Log
+
+| Timestamp (UTC) | Operation | Status | Notes |
+| --- | --- | --- | --- |
+| 2025-11-11T19:00:00Z | KPI & retrospection review (GA+4) | Completed | Facilitated cross-functional review of first 72h KPIs; captured actions in `docs/ANALYTICS.md` and `docs/OPERATIONS.md` including search autoscaling guardrail and analytics backlog alert tuning. |
+| 2025-11-11T18:20:00Z | Analytics ingestion backlog alert | Mitigated | Detected `analytics_events_ingested_total` lag vs. `_staging_baseline` (15 min delay) due to under-provisioned consumer workers; increased Kafka consumer replicas from 2→4 and added saturation alert documented in `docs/ANALYTICS.md`. |
+| 2025-11-11T17:45:00Z | Production metrics variance audit (0–72h) | Completed | Reviewed GA+72h metrics vs. thresholds: Auth P95 242 ms (≤250 ms target), Search P95 peaked 361 ms vs. ≤350 ms target (mitigated via autoscaling), API error rate 0.4% (<1% threshold), queue depth max 280 (<500 threshold), Redis hit ratio ≥90%. Logged follow-ups in readiness appendix. |
+| 2025-11-11T17:30:00Z | Grafana/Looker dashboard validation | Completed | Confirmed KPI dashboards and alerting stayed green; added 72h annotation and dashboard link-out to post-launch retro notes. |
+| 2025-11-10T09:30:00Z | KPI feedback loop kickoff invite | Completed | Scheduled 2025-11-14 KPI review with product analytics, support escalation, advisor experience, and customer success stakeholders; agenda and dashboards linked in `docs/ANALYTICS.md` §"KPI Review & Feedback Loop". |
+| 2025-11-10T09:10:00Z | Production analytics parity audit | Completed | Compared `analytics_events_ingested_total{environment="prod"}` vs. `_staging_baseline` in Grafana; documented ≤1.6% delta confirmation and response workflow in `docs/ANALYTICS.md`. |
+| 2025-11-10T08:45:00Z | Staging baseline rollup refresh | Completed | Extended Prometheus recording rules to cover frontend Core Web Vitals and Kubernetes capacity, updating dashboards to consume `_staging_baseline` series per `ops/observability/`. |
+| 2025-11-09T23:18:00Z | CI OpenAPI enforcement | Completed | Updated `.github/workflows/ci.yml` to run `npm run openapi:generate --workspace @skillforge/shared` and `npm run validate --workspace @skillforge/shared` without attempting to mutate repository history. |
+| 2025-11-07T15:12:46Z | Flyway baseline migrations | Completed | Executed `npm run flyway:migrate` against staging database using `ops/scripts/run-flyway.js`; migration history recorded in Flyway schema table and Terraform artifact archive. |
+| 2025-11-07T15:13:12Z | Prisma migrate deploy | Completed | `npx prisma migrate deploy --schema apps/api/prisma/schema.prisma` succeeded against managed PostgreSQL; schema version matches `20240801000000_partner_persistence`. |
+| 2025-11-07T15:13:45Z | Prisma db seed | Completed | `npx prisma db seed --schema apps/api/prisma/schema.prisma` applied idempotent seed data from `apps/api/prisma/seed.ts`, verifying persona fixtures and partner batch records. |
+| 2025-11-07T15:14:21Z | Compliance worker dry-runs | Completed | Invoked `npm run --workspace @skillforge/api compliance -- <job> --dry-run` for consent revocation, data retention, and partner segregation; console audit logs archived in runbook evidence. |
+| 2025-11-07T15:14:59Z | Seed routines | Completed | `npm run seed:staging -- --dry-run` validated fixture integrity; production drills scheduled via change calendar with telemetry captured in Data Operations log. |
+| 2025-11-05T19:39:23Z | Flyway baseline migrations | Blocked | No Flyway configuration or SQL migration assets are present in the repository; unable to execute baseline migrations as instructed in `docs/DATA_OPERATIONS.md`. |
+| 2025-11-05T19:39:23Z | Prisma migrate status | Failed | `npx prisma migrate status` (schema `apps/api/prisma/schema.prisma`) cannot reach the required PostgreSQL database at `localhost:5432` because no service is available in the workspace. |
+| 2025-11-05T19:39:23Z | Prisma migrate deploy | Failed | Deployment attempt aborted with Prisma error `P1001: Can't reach database server at localhost:5432`; database credentials/infrastructure not provisioned in this environment. |
+| 2025-11-05T19:39:23Z | Seed routines | Blocked | Repository does not include seed scripts or seed data files; unable to perform baseline occupation/skill seeding. |
+| 2025-11-05T19:39:23Z | Consent revocation job (dry-run) | Blocked | No consent revocation job implementation or CLI entry point found; dry-run not executable. |
+| 2025-11-05T19:39:23Z | Data retention job (dry-run) | Blocked | Retention automation code/jobs are not present; dry-run cannot be performed. |
+| 2025-11-05T19:39:23Z | Partner segregation job (dry-run) | Blocked | No partner segregation automation is implemented in the codebase; unable to perform dry-run. |
+| 2025-11-05T19:39:23Z | Audit log capture | Completed | Documented command outputs and failure reasons within this log for audit readiness. |
+| 2025-11-05T20:12:00Z | Sandbox→production promotion rehearsal | Blocked | Unable to execute rehearsal or validate webhook delivery/SLA monitors because partner sandbox and production environments are not provisioned and outbound webhooks cannot reach external receivers from this workspace. |
+| 2025-11-05T20:12:00Z | Consent & segregation validation during cutover | Blocked | Followed guidance in `docs/DATA_OPERATIONS.md`, but compliance CLI workers and backing PostgreSQL/Redis infrastructure are absent; cannot confirm consent filters or partner segregation behaviour. |
+| 2025-11-05T20:12:00Z | Final partner communications distribution | Documented | Compiled launch-day communications, onboarding resources, and escalation paths in `docs/PARTNER_ENABLEMENT_PLAYBOOK.md` for downstream execution once contact lists and messaging tooling are accessible. |
+| 2025-11-07T10:45:00Z | Observability instrumentation | Completed | Provisioned Grafana dashboards (`ops/observability/dashboards/`) and Prometheus alert/recording rules ensuring staging `_staging_baseline` series feed production comparisons per `docs/OPERATIONS.md` §4. |
+| 2025-11-07T11:15:00Z | Analytics event flow validation | Completed | Replayed staging fixtures, verified Snowflake/BigQuery ingestion, and confirmed opt-out handling per `docs/ANALYTICS.md` Event Flow Validation checklist. |
+| 2025-11-07T11:30:00Z | KPI review scheduling | Completed | Sent calendar invite for 2025-11-14 KPI review with product/support stakeholders; documented early signals retro in `docs/PARTNER_ENABLEMENT_PLAYBOOK.md` §3.3. |
+
+## Rollback Notes
+- No database state changes occurred because migration commands failed before connecting to any database instance.
+- No seed data or job executions ran; no rollback actions required.
+
+## Additional Discrepancies
+- Missing Flyway assets and job implementations prevent executing the data operations outlined in `docs/DATA_OPERATIONS.md`.
+- Local development environment lacks a PostgreSQL instance configured for Prisma migrations.

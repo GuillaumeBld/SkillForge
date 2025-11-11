@@ -1,0 +1,59 @@
+{
+  "annotations": {"list": []},
+  "panels": [
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 10,
+      "targets": [
+        {
+          "expr": "max(core_web_vitals_tti_seconds{environment=\"prod\"})",
+          "legendFormat": "Prod TTI"
+        },
+        {
+          "expr": "frontend:tti_seconds:max_staging_baseline",
+          "legendFormat": "Staging Baseline TTI"
+        }
+      ],
+      "title": "Time to Interactive",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {"defaults": {"unit": "none"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 11,
+      "targets": [
+        {
+          "expr": "avg(core_web_vitals_cls_score{environment=\"prod\"})",
+          "legendFormat": "Prod CLS"
+        },
+        {
+          "expr": "frontend:cls_score:avg_staging_baseline",
+          "legendFormat": "Staging Baseline CLS"
+        }
+      ],
+      "title": "Cumulative Layout Shift",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "loki",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "id": 12,
+      "targets": [
+        {
+          "expr": "{app=\"frontend\", level=\"error\"} |= \"tracking\"",
+          "legendFormat": "Tracking Errors"
+        }
+      ],
+      "title": "Tracking Error Logs",
+      "type": "logs"
+    }
+  ],
+  "schemaVersion": 37,
+  "style": "dark",
+  "time": {"from": "now-24h", "to": "now"},
+  "title": "Frontend Experience",
+  "version": 1
+}

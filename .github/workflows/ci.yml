@@ -4,12 +4,23 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: write
-
 jobs:
   build-and-validate:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: skillforge
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,20 +33,37 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm install
-      - name: Commit updated lockfile
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git diff --staged --quiet || git commit -m "chore: update package-lock.json"
-          git push
+      - name: Run Prisma migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/skillforge
+        run: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+      - name: Seed database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/skillforge
+        run: npx prisma db seed --schema apps/api/prisma/schema.prisma
       - name: Generate OpenAPI types
-        run: npm run openapi:generate
+        run: npm run openapi:generate --workspace @skillforge/shared
       - name: Validate OpenAPI contract
-        run: npm run openapi:validate
+        run: npm run validate --workspace @skillforge/shared
       - name: Lint
         run: npm run lint
       - name: Type check
         run: npm run typecheck
-      - name: Run tests
-        run: npm run test
+      - name: Unit tests (frontend)
+        run: npm run test --workspace @skillforge/frontend
+      - name: Integration tests (api)
+        run: npm run test --workspace @skillforge/api
+      - name: Build frontend for preview
+        run: npm run build --workspace @skillforge/frontend
+      - name: Install Playwright browsers
+        working-directory: apps/frontend
+        run: npx playwright install --with-deps
+      - name: End-to-end tests
+        working-directory: apps/frontend
+        run: npm run check:e2e
+      - name: Accessibility checks (axe)
+        working-directory: apps/frontend
+        run: npm run check:accessibility
+      - name: Lighthouse performance budgets
+        working-directory: apps/frontend
+        run: npm run check:performance

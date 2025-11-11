@@ -3,6 +3,9 @@ pnpm-lock.yaml
 dist
 build
 coverage
+.lighthouseci
+playwright-report
+test-results
 .husky/_
 .DS_Store
 .env

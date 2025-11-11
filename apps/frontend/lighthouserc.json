@@ -1,0 +1,48 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://127.0.0.1:4173/learners/dashboard",
+        "http://127.0.0.1:4173/advisors/console",
+        "http://127.0.0.1:4173/partners/onboarding",
+        "http://127.0.0.1:4173/marketing/landing"
+      ],
+      "numberOfRuns": 1,
+      "chromeFlags": [
+        "--headless=new",
+        "--no-sandbox",
+        "--disable-dev-shm-usage"
+      ],
+      "settings": {
+        "preset": "desktop"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "interactive": [
+          "error",
+          {
+            "maxNumericValue": 3500,
+            "aggregationMethod": "optimistic"
+          }
+        ],
+        "categories:performance": [
+          "error",
+          {
+            "minScore": 0.9
+          }
+        ],
+        "categories:accessibility": [
+          "warn",
+          {
+            "minScore": 0.95
+          }
+        ]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./.lighthouseci"
+    }
+  }
+}

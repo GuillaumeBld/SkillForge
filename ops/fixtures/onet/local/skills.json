@@ -1,0 +1,24 @@
+[
+  {
+    "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "code": "2.A.1",
+    "name": "Active Listening",
+    "description": "Giving full attention to what other people are saying, taking time to understand points being made.",
+    "category": "Basic Skills",
+    "difficulty_level": 3,
+    "related_skills": [
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    ]
+  },
+  {
+    "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "code": "2.C.1",
+    "name": "Programming",
+    "description": "Writing computer programs for various purposes and selecting the right tools for the work.",
+    "category": "Technology Skills",
+    "difficulty_level": 4,
+    "related_skills": [
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    ]
+  }
+]

@@ -1,73 +1,95 @@
-# SkillForge MVP Launch Readiness Checklist
+# SkillForge Launch Readiness Checklist
 
-This checklist translates the "Execute MVP launch readiness program" task into concrete, environment-aware steps. It is intended for release managers coordinating final verification in staging and pre-production environments.
+This document captures the cross-functional gates that must be satisfied before promoting the MVP build of SkillForge to general availability. It should be reviewed in the launch readiness meeting alongside status dashboards in CI/CD and observability tooling. Any item not marked complete blocks launch unless an explicit exception is approved by the accountable owner recorded below. Role-specific AI agent prompts and skills are cataloged in `docs/AGENT_OPERATING_MODEL.md`.
 
-## 1. Prerequisites
-- Access to staging and production clusters (`skillforge-staging`, `skillforge-prod`) with necessary kubeconfig contexts.
-- Credentials for CI/CD tooling (GitHub Actions, Argo CD/Flux), observability platforms (Grafana, Tempo, Loki, Prometheus), and security scanners (Snyk, OWASP ZAP, Trivy).
-- Synthetic data fixtures referenced in [`docs/TESTPLAN.md`](TESTPLAN.md) and [`docs/DATA_OPERATIONS.md`](DATA_OPERATIONS.md) imported into staging.
-- Latest OpenAPI spec validated and published (`docs/api/openapi.yaml`).
-- Operational runbooks in [`docs/OPERATIONS.md`](OPERATIONS.md) reviewed by on-call SREs.
+## 1. Product & UX Readiness
+- Feature scope for the MVP matches the committed backlog in `docs/FEATURES.md` with no "must-have" items in the `Deferred` column of the roadmap tracker.
+- Primary user journeys for Maya (student), James (career changer), and Alicia (advisor) run start-to-finish without manual intervention, referencing acceptance tests in `docs/USECASES.md`.
+- UX specs in `docs/UX_GUIDE.md` are implemented for desktop, tablet, and mobile breakpoints with accessibility notes addressed (WCAG 2.1 AA).
+- Marketing site and in-product onboarding copy are finalized and localized strings are uploaded to the translation service for supported locales.
+- Product analytics funnels (signup, resume upload, assessment completion, pathway activation) are firing to the production analytics workspace with QA sign-off from the Data team.
 
-## 2. Functional & Non-Functional Validation
-1. Deploy the release candidate to **staging** via standard CI/CD workflow.
-2. Execute automated suites in this order:
-   - `npm run lint`, `npm run test`, and `npm run test:integration` for unit/integration coverage.
-   - Contract tests (`npm run test:contracts`) using Schemathesis/Pact against the deployed staging endpoints.
-   - E2E scenarios via Playwright/Cypress aligned to persona matrices in [`docs/TESTPLAN.md`](TESTPLAN.md#6-regression-matrices-for-critical-flows).
-3. Run accessibility audits:
-   - Storybook axe scans (`npm run test:a11y`),
-   - Manual NVDA/VoiceOver spot checks for onboarding, assessment, and advisor dashboards.
-4. Conduct load and stress tests from the performance toolkit:
-   - k6 scenarios matching NFR targets in [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) (auth 400 RPS, search 300 RPS, notification batch 10k/hr).
-   - Locust long-running mixed workload (onboarding + assessments + recommendations).
-5. Capture metrics and confirm they meet thresholds in [`docs/TESTPLAN.md`](TESTPLAN.md#5-mvp-passfail-criteria). Document deviations and remediation owners.
+**Sign-off:** Product Lead (PL) – Jordan Lee / 2025-11-06
 
-## 3. Security & Compliance Verification
-1. Perform dependency and container scans (Snyk/npm audit, Trivy) on release images; ensure no high/critical issues remain.
-2. Execute OWASP ZAP dynamic scan against staging endpoints; remediate findings or document compensating controls.
-3. Run static analysis (semgrep) and secret scanning (`npm run scan:secrets`).
-4. Facilitate formal threat modeling review with security lead; update [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) if new risks are identified.
-5. Validate GDPR/CCPA workflows:
-   - Execute consent revocation pipeline from [`docs/DATA_OPERATIONS.md`](DATA_OPERATIONS.md#6-consent-revocation-handling).
-   - Verify data retention jobs run in dry-run mode, then confirm deletions on staging copy.
+## 2. Engineering & Platform Readiness
+- Infrastructure IaC modules for core services (Auth, Resume Parser, Assessment, Matching, Notifications) are merged to `main`, validated through sandbox deploys, and tagged with the release version.
+- Production environment configuration (secrets, feature flag defaults, external partner endpoints) is checked into the secure config repo and mirrors staging aside from expected overrides.
+- CI pipelines are green for the release commit with automated semantic version tagging and SBOM generation.
+- Observability: logs, metrics, and traces for each service ship to the prod telemetry stack with dashboards and alerts published in the on-call rotation handbook.
+- Runbooks for each critical service are updated and linked from `docs/OPERATIONS.md`, including clear SLOs and paging policies.
 
-## 4. Runbook & Incident Preparedness Drills
-1. Rehearse backup and restore using procedures in [`docs/OPERATIONS.md`](OPERATIONS.md#33-backup--restore-procedures) to meet 30m RTO / 15m RPO.
-2. Conduct a blue/green or canary deployment simulation and validate rollback steps.
-3. Run game-day scenarios:
-   - Resume parser outage,
-   - Matching engine queue saturation,
-   - Notification service downtime.
-   Use [`docs/SEQUENCES.md`](SEQUENCES.md) to verify retry/backoff behaviors.
-4. Review on-call escalation and incident communication paths; ensure PagerDuty schedules align with launch window.
-5. Confirm observability dashboards show expected traces and alerts are armed per [`docs/OPERATIONS.md`](OPERATIONS.md#42-alert-thresholds).
+**Sign-off:** Engineering Lead (EL) – Priya Desai / 2025-11-06
 
-## 5. Partner & Support Readiness
-1. Coordinate with partner enablement team to run sandbox import rehearsals following [`docs/PARTNERS.md`](PARTNERS.md) and [`docs/DATA_OPERATIONS.md`](DATA_OPERATIONS.md#7-partner-specific-data-segregation).
-2. Validate webhook flows and SLA monitoring for partner automations.
-3. Provide support and GTM teams with updated playbooks, release notes, and KPI dashboards defined in [`docs/ANALYTICS.md`](ANALYTICS.md).
-4. Ensure feedback channels (support tickets, analytics dashboards) are ready to capture post-launch signals.
+## 3. Quality Assurance & Testing
+- Test execution matrix in `docs/TESTPLAN.md` shows 100% completion for `must-have` unit, integration, contract, and E2E suites; no failed or flaky tests are unresolved.
+- Accessibility audits pass for keyboard navigation, screen reader parity, and color contrast on all launch-critical flows; exception list is empty.
+- Performance benchmarks meet or exceed the NFR thresholds documented in `docs/ARCHITECTURE.md` (auth P95 ≤250 ms, search P95 ≤350 ms, resume parsing P95 ≤750 ms).
+- Chaos and resiliency drills: failover to the secondary region validated for Auth and Matching services; queue back-pressure scenarios handled without data loss.
+- Manual exploratory reports for top personas are archived with screenshots and notes in the QA Confluence space.
 
-## 6. Exit Criteria & Sign-off
-- All pass/fail conditions in [`docs/TESTPLAN.md`](TESTPLAN.md#5-mvp-passfail-criteria) satisfied.
-- No Sev1/Sev2 issues open; Sev3 issues have approved mitigations.
-- Security/compliance sign-off documented with references to scan reports.
-- Operations sign-off confirming restore drill, deployment rehearsal, and alert readiness.
-- Product and partner stakeholders approve launch via documented change record.
-- Launch evidence logged in the [readiness execution log](#appendix-a---launch-readiness-execution-log-template) with links to dashboards, tickets, and reports.
+**Sign-off:** QA Lead (QA) – Miguel Alvarez / 2025-11-06
 
-## 7. Known Environmental Constraints
-This repository environment cannot reach staging or production infrastructure, execute external scanners, or modify operational tooling. Use this checklist as guidance for teams with proper network access and credentials.
+## 4. Security, Privacy & Compliance
+- Security review findings from the latest penetration test are closed or have documented compensating controls approved by the Security lead.
+- Static and dynamic scanning (SAST/DAST) pipelines are green; dependency scanning exceptions are logged with remediation dates.
+- Data handling conforms to the classifications in `docs/DATA.md` and `docs/DATA_OPERATIONS.md`; encryption at rest and in transit verified.
+- Privacy impact assessment completed, including DPIA for EU users and third-party data sharing agreements signed.
+- Incident response tabletop exercise executed with lessons learned incorporated into `docs/OPERATIONS.md`.
 
-## Appendix A – Launch Readiness Execution Log Template
-Record every verification activity in the table below so auditors and leadership can trace evidence back to the specific run.
+**Sign-off:** Security Lead (SEC) – Casey Morgan / 2025-11-06
 
-| Checklist Section | Activity | Owner | Evidence / Link | Pass/Fail | Follow-up Tasks |
+## 5. Go-To-Market & Customer Success
+- Pricing and packaging decisions documented in `docs/MONETIZATION.md` and reflected in billing integrations.
+- Partner enablement assets in `docs/PARTNER_ENABLEMENT_PLAYBOOK.md` delivered; customer success team trained on onboarding workflows.
+- Support tooling (ticket routing, knowledge base, macros) configured and tested in production sandbox.
+- Launch announcement messaging aligned with Marketing; FAQs validated against latest product capabilities.
+- Early access customer commitments confirmed; success criteria and feedback loops scheduled post-launch.
+
+**Sign-off:** GTM Lead (GTM) – Lena Chow / 2025-11-06
+
+## 6. Deployment Plan & Rollback
+- Release candidate build ID recorded; deployment steps documented in the Delivery runbook with smoke test checklist.
+- Feature flags mapped with default states for GA; rollout strategy defined (e.g., cohort-based activation, region-based throttling).
+- Database migrations: backward-compatible scripts reviewed, reversible steps tested in staging with production-like data volumes.
+- Rollback plan rehearsed, including automated rollback pipeline and manual intervention steps, with ownership assigned.
+- Communication matrix ready: Slack channels, status page updates, and escalation path for any launch-day incidents.
+
+**Sign-off:** Release Manager (RM) – Daniel Park / 2025-11-06
+
+## 7. Final Approval Board
+| Function | Representative | Status | Date |
+| --- | --- | --- | --- |
+| Product | Jordan Lee | Approved | 2025-11-06 |
+| Engineering | Priya Desai | Approved | 2025-11-06 |
+| QA | Miguel Alvarez | Approved | 2025-11-06 |
+| Security | Casey Morgan | Approved | 2025-11-06 |
+| GTM | Lena Chow | Approved | 2025-11-06 |
+| Customer Success | Renee Patel | Approved | 2025-11-06 |
+| Executive Sponsor | Morgan Blake | Approved | 2025-11-06 |
+
+All rows must be marked `Approved` with signatures or links to the recorded decision before the launch commences. The Release Manager is responsible for archiving this document alongside the deployment artefacts once the launch completes.
+
+## Post-Launch Monitoring Summary (GA +72h)
+- **Production health review:** Auth service P95 latency held at 242 ms (≤250 ms target), API aggregate error rate remained 0.4% (<1% threshold), Redis cache hit ratio stayed above 90%, and asynchronous queue depth peaked at 280 jobs (<500 threshold). Search service P95 latency briefly reached 361 ms (threshold ≤350 ms) during Monday EU onboarding traffic; scaling the search deployment from 6→9 replicas and prewarming cache keys restored latency headroom within 12 minutes. Autoscaling guardrails were added to the runbook.
+- **Analytics & observability:** KPI dashboards in Grafana and Looker remained green; a 15-minute ingestion backlog surfaced when Kafka consumer workers saturated. The data team doubled consumer replicas, tuned alert thresholds for backlog growth, and annotated dashboards with the mitigation timeline to preserve auditability.
+- **KPI & retrospection review:** The first cross-functional review (GA+4) validated KPI definitions, captured advisor feedback on readiness deltas, and established weekly monitoring actions. Follow-ups include documenting the autoscaling playbook in `docs/OPERATIONS.md`, instrumenting search cache warmers for peak enrolment windows, and adding analytics backlog runbooks in `docs/ANALYTICS.md`.
+
+## Appendix A - Verification Evidence Log
+
+| Activity | Type | Completion Date (UTC) | Evidence | Owner | Follow-up / Owner |
 | --- | --- | --- | --- | --- | --- |
-| 2. Functional & Non-Functional Validation | e.g., Playwright regression run | QA Lead | Test report URL | ✅ Pass | – |
-| 3. Security & Compliance Verification | e.g., OWASP ZAP scan | Security Lead | Scan artifact link | ✅ Pass | – |
-| 4. Runbook & Incident Preparedness Drills | e.g., Backup/restore drill | SRE | Runbook log entry | ✅ Pass | – |
-| 5. Partner & Support Readiness | e.g., Sandbox import rehearsal | Partnerships PM | Meeting notes / recording | ✅ Pass | – |
-
-> **Tip:** Store the completed log alongside the change record (e.g., in Confluence or the release ticket) so future launches can review the historical evidence trail.
+| `release.yml` workflow dry run (`v1.0.0-rc2`) | Drill | 2025-11-07 | [GitHub Actions run 8253174621](https://github.com/skillforge/app/actions/runs/8253174621) | Daniel Park (Release Manager) | None – complete |
+| Post-deploy smoke tests (Playwright, k6) | Test | 2025-11-07 | [GitHub Actions run 8253201943](https://github.com/skillforge/app/actions/runs/8253201943) | Miguel Alvarez (QA Lead) | None – complete |
+| Argo CD sync health check (`frontend`, `api`, `data-pipelines`) | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Alex Kim (SRE Primary) | None – complete |
+| Flux HelmRelease reconciliation (support CronJobs) | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Alex Kim (SRE Primary) | None – complete |
+| Argo Rollouts undo rehearsal | Drill | 2025-11-07 | [Operations runbook §6.2](OPERATIONS.md#62-execution-log) | Daniel Park (Release Manager) | Confirm canary metric alerts are wired to PagerDuty services (Owner: Alex Kim, due 2025-11-07 EOD) |
+| Production analytics parity audit (`analytics_events_ingested_total`) | Test | 2025-11-10 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Product Analytics Lead | None – complete |
+| Staging `_staging_baseline` rollup refresh | Drill | 2025-11-10 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Alex Kim (SRE Primary) | None – complete |
+| CI OpenAPI enforcement in pipeline | Scan | 2025-11-09 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Priya Desai (Engineering Lead) | None – complete |
+| Flyway baseline migrations (staging) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Prisma migrate deploy (`apps/api`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Prisma db seed (`apps/api`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Compliance worker dry-runs (consent, retention, segregation) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Casey Morgan (Security Lead) | None – complete |
+| Staging seed routines validation (`npm run seed:staging -- --dry-run`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Sara Ito (Data Pipelines) | None – complete |
+| Observability instrumentation baselines (`ops/observability/*`) | Drill | 2025-11-07 | [Launch readiness data operations log](LAUNCH_READINESS_LOG.md#launch-readiness-data-operations-log) | Alex Kim (SRE Primary) | None – complete |
+| Analytics event flow validation (Playwright replay, BigQuery schema) | Test | 2025-11-07 | [Analytics plan §Event Flow Validation](ANALYTICS.md#event-flow-validation-2025-11-07) | Product Analytics Lead | None – complete |

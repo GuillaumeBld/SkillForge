@@ -51,11 +51,14 @@ matchingRouter.get('/users/:userId/matches', async (req, res, next) => {
       user_id: userId,
       type: String(type),
       next_cursor: occupations.length === take ? occupations[occupations.length - 1].id : null,
-      results: occupations.map((occupation) => ({
+      results: occupations.map((occupation: (typeof occupations)[number]) => ({
         id: occupation.id,
         title: occupation.title,
         match_score: 0.8,
-        top_skills: occupation.alternativeTitles.slice(0, 3).map((skill) => ({ name: skill, source: 'JAAT' })),
+        top_skills: occupation.alternativeTitles.slice(0, 3).map((skill: string) => ({
+          name: skill,
+          source: 'JAAT'
+        })),
         onet_code: occupation.onetCode,
         source_reference: 'JAAT Toolkit'
       }))

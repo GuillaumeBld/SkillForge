@@ -1,5 +1,85 @@
+jest.mock('./observability/tracing', () => {
+  const noop = jest.fn();
+  const sdk = { start: noop, shutdown: noop };
+  return {
+    __esModule: true,
+    startTelemetry: noop,
+    shutdownTelemetry: noop,
+    otelSdk: sdk,
+    default: sdk
+  };
+});
+
+jest.mock('bullmq', () => {
+  class FakeQueue {
+    public jobs: unknown[] = [];
+
+    constructor(public name: string) {}
+
+    async add(name: string, payload: unknown) {
+      this.jobs.push(payload);
+      return { name, data: payload };
+    }
+
+    async close() {
+      return undefined;
+    }
+  }
+
+  class FakeQueueEvents {
+    constructor(public name: string) {}
+
+    on() {
+      return this;
+    }
+
+    async close() {
+      return undefined;
+    }
+  }
+
+  class FakeWorker {
+    constructor(public name: string) {}
+
+    async close() {
+      return undefined;
+    }
+  }
+
+  return {
+    __esModule: true,
+    Queue: FakeQueue,
+    QueueEvents: FakeQueueEvents,
+    Worker: FakeWorker
+  };
+});
+
+jest.mock('ioredis', () => {
+  class FakeRedis {
+    public status = 'ready';
+
+    duplicate() {
+      return new FakeRedis();
+    }
+
+    on() {
+      return this;
+    }
+
+    connect() {
+      return Promise.resolve();
+    }
+  }
+
+  return {
+    __esModule: true,
+    default: FakeRedis,
+    Redis: FakeRedis
+  };
+});
+
+import type { Express } from 'express';
 import request from 'supertest';
-import app from './index';
 import { getThrottler, SLA_LIMITS } from './middleware';
 import { partnerDataStore } from './partner-store';
 import { webhookService } from './webhooks';
@@ -8,16 +88,18 @@ import { __resetPartnerCredentialCache } from './config';
 type Headers = Record<string, string>;
 
 const primaryPartnerHeaders: Headers = {
-  'x-api-key': 'sk_live_123',
-  'x-api-secret': 'sh_live_456',
-  'x-partner-id': 'workforce-agency-17'
+  'x-api-key': 'pk_dev_sample_123',
+  'x-api-secret': 'sk_dev_sample_456',
+  'x-partner-id': 'development-partner-1'
 };
 
 const secondaryPartnerHeaders: Headers = {
-  'x-api-key': 'sk_live_789',
-  'x-api-secret': 'sh_live_012',
-  'x-partner-id': 'enterprise-analytics-88'
+  'x-api-key': 'pk_dev_sample_789',
+  'x-api-secret': 'sk_dev_sample_012',
+  'x-partner-id': 'development-partner-2'
 };
+
+let app: Express;
 
 const withHeaders = (overrides: Headers = {}) => ({
   ...primaryPartnerHeaders,
@@ -25,10 +107,15 @@ const withHeaders = (overrides: Headers = {}) => ({
 });
 
 describe('SkillForge partner workflows', () => {
-  beforeEach(() => {
+  beforeAll(async () => {
+    const module = await import('./index');
+    app = module.default;
+  });
+
+  beforeEach(async () => {
     delete process.env.PARTNER_CREDENTIALS;
     __resetPartnerCredentialCache();
-    partnerDataStore.clear();
+    await partnerDataStore.clear();
     webhookService.reset();
     getThrottler().clear();
   });
@@ -112,7 +199,7 @@ describe('SkillForge partner workflows', () => {
       .expect(200);
 
     expect(primaryLookup.body.batch.id).toBe(batchId);
-    expect(primaryLookup.body.batch.partnerId).toBe('workforce-agency-17');
+    expect(primaryLookup.body.batch.partnerId).toBe('development-partner-1');
   });
 
   it('throttles candidate import requests per SLA', async () => {
@@ -120,7 +207,11 @@ describe('SkillForge partner workflows', () => {
     const limit = SLA_LIMITS.candidateImport.production;
 
     for (let index = 0; index < limit; index += 1) {
-      const allowed = throttler.attempt('workforce-agency-17:candidateImport', SLA_LIMITS.candidateImport, 'production');
+      const allowed = throttler.attempt(
+        'development-partner-1:candidateImport',
+        SLA_LIMITS.candidateImport,
+        'production'
+      );
       expect(allowed).toBe(true);
     }
 

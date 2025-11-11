@@ -1,6 +1,9 @@
 import type { Preview } from "@storybook/react";
 import "../src/styles/tailwind.css";
 import { initializeAnalyticsDecorator } from "../src/analytics/storybookAnalytics";
+import { initializeMockServiceWorker } from "../src/mocks/browser";
+
+void initializeMockServiceWorker();
 
 const preview: Preview = {
   decorators: [initializeAnalyticsDecorator],

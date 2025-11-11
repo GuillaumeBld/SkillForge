@@ -1,31 +1,37 @@
 import { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import './styles/tailwind.css';
 import { fetchHealth } from './api/client';
-import { setHealth } from './store/slices/healthSlice';
-import type { RootState } from './store/store';
+import { setHealth, setHealthError } from './store/slices/healthSlice';
+import type { RootState, AppDispatch } from './store/store';
+import { AppLayout, AdvisorConsole, LearnerDashboard, MarketingLanding, PartnerOnboarding } from './pages';
 
 function App() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const health = useSelector((state: RootState) => state.health);
 
   useEffect(() => {
-    fetchHealth().then((data) => {
-      dispatch(setHealth(data));
-    });
+    fetchHealth()
+      .then((data) => {
+        dispatch(setHealth(data));
+      })
+      .catch(() => {
+        dispatch(setHealthError('Backend unreachable'));
+      });
   }, [dispatch]);
 
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
-      <h1>SkillForge Platform Shell</h1>
-      <p>
-        Backend status: <strong>{health.status ?? 'checking...'}</strong>
-      </p>
-      {health.lastChecked ? <p>Last checked at: {new Date(health.lastChecked).toLocaleString()}</p> : null}
-      <p>
-        This React shell is wired to the shared OpenAPI contract to ensure compile-time safety across the
-        stack.
-      </p>
-    </main>
+    <Routes>
+      <Route element={<AppLayout health={health} />}>
+        <Route index element={<Navigate to="/learners/dashboard" replace />} />
+        <Route path="/learners/dashboard" element={<LearnerDashboard />} />
+        <Route path="/advisors/console" element={<AdvisorConsole />} />
+        <Route path="/partners/onboarding" element={<PartnerOnboarding />} />
+        <Route path="/marketing/landing" element={<MarketingLanding />} />
+        <Route path="*" element={<Navigate to="/learners/dashboard" replace />} />
+      </Route>
+    </Routes>
   );
 }
 
