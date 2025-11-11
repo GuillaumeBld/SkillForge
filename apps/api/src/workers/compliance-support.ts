@@ -45,6 +45,16 @@ export interface ScopedUser {
   createdAt: Date;
   updatedAt: Date;
   profileGoals: string[];
+  profile: { goals: string[] } | null;
+}
+
+interface PrismaUserRecord {
+  id: string;
+  email: string;
+  marketingOptIn: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  profile: { goals: string[] } | null;
 }
 
 const TENANT_GOAL_PREFIX = 'tenant:';
@@ -153,22 +163,16 @@ export const fetchScopedUsers = async (options: {
         }
       }
     }
-  })) as Array<{
-    id: string;
-    email: string;
-    marketingOptIn: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    profile: { goals: string[] } | null;
-  }>;
+  })) as PrismaUserRecord[];
 
-  return users.map<ScopedUser>((user) => ({
+  return users.map((user: PrismaUserRecord) => ({
     id: user.id,
     email: user.email,
     marketingOptIn: user.marketingOptIn,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    profileGoals: user.profile?.goals ?? []
+    profileGoals: user.profile?.goals ?? [],
+    profile: user.profile
   }));
 };
 

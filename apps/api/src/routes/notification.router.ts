@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { Router, type NextFunction } from 'express';
 
 import prisma from '../config/prisma';
@@ -7,12 +6,19 @@ import { notificationQueue } from '../workers';
 
 const notificationRouter = Router();
 
+const isPrismaKnownRequestError = (error: unknown): error is { code: string } => {
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof (error as Record<string, unknown>).code === 'string'
+  );
+};
+
 const handlePrismaError = (error: unknown, next: NextFunction) => {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === 'P2025') {
-      next(new ApiError('Notification not found', 404));
-      return;
-    }
+  if (isPrismaKnownRequestError(error) && error.code === 'P2025') {
+    next(new ApiError('Notification not found', 404));
+    return;
   }
 
   next(error);

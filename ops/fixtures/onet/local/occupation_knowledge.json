@@ -1,0 +1,17 @@
+[
+  {
+    "occupation_id": "11111111-1111-1111-1111-111111111111",
+    "knowledge_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "importance_level": 75
+  },
+  {
+    "occupation_id": "22222222-2222-2222-2222-222222222222",
+    "knowledge_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "importance_level": 65
+  },
+  {
+    "occupation_id": "22222222-2222-2222-2222-222222222222",
+    "knowledge_id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    "importance_level": 85
+  }
+]

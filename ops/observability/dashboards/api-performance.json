@@ -1,0 +1,80 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1699392000000,
+  "panels": [
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{environment=\"prod\", job=~\"api-.*\"}[5m])))",
+          "legendFormat": "Prod P95"
+        },
+        {
+          "expr": "api:request_duration_seconds:p95_staging_baseline",
+          "legendFormat": "Staging Baseline P95"
+        }
+      ],
+      "title": "API Latency P95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum by (service) (rate(http_requests_total{environment=\"prod\", job=~\"api-.*\", status=~\"5..\"}[5m])) / sum by (service) (rate(http_requests_total{environment=\"prod\", job=~\"api-.*\"}[5m]))",
+          "legendFormat": "{{service}} Prod"
+        },
+        {
+          "expr": "api:error_rate_staging_baseline",
+          "legendFormat": "{{service}} Staging Baseline"
+        }
+      ],
+      "title": "API Error Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "tempo",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "query": "{service.name=~\"api-.*\", environment=\"prod\"}"
+        }
+      ],
+      "title": "Trace Waterfall (Auth/Search)",
+      "type": "traces" 
+    }
+  ],
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": ["skillforge", "slo"],
+  "templating": {
+    "list": []
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "",
+  "title": "API Performance",
+  "version": 1
+}

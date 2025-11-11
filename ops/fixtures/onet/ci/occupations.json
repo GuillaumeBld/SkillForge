@@ -1,9 +1,17 @@
 [
   {
-    "onet_soc_code": "15-1252.00",
-    "jaat_job_id": "JAAT-CI-001",
-    "preferred_label": "Software Developers",
-    "description": "CI smoke dataset for integration testing.",
-    "source": "O*NET 25.1"
+    "id": "11111111-1111-1111-1111-111111111111",
+    "onet_code": "11-1011.00",
+    "soc_code": "11-1011",
+    "title": "Chief Executives",
+    "description": "Determine and formulate policies and strategies for organizations to ensure they meet their goals.",
+    "alternative_titles": [
+      "Chief Executive Officer",
+      "CEO"
+    ],
+    "tasks": [
+      "Direct company operations to achieve strategic objectives."
+    ],
+    "education_level": "Bachelor's degree or higher"
   }
 ]

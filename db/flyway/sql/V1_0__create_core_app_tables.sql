@@ -160,3 +160,83 @@ CREATE TABLE IF NOT EXISTS "Notification" (
 
 CREATE INDEX IF NOT EXISTS "Notification_userId_idx" ON "Notification" ("userId");
 CREATE INDEX IF NOT EXISTS "Notification_status_idx" ON "Notification" ("status");
+
+CREATE TABLE IF NOT EXISTS "PartnerCandidateBatch" (
+    "id" text PRIMARY KEY,
+    "partnerId" text NOT NULL,
+    "environment" text NOT NULL,
+    "webhookUrl" text,
+    "processed" integer NOT NULL,
+    "failed" integer NOT NULL,
+    "createdAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "PartnerCandidateBatch_partner_env_idx"
+    ON "PartnerCandidateBatch" ("partnerId", "environment");
+
+CREATE TABLE IF NOT EXISTS "PartnerCandidateResult" (
+    "id" text PRIMARY KEY,
+    "batchId" text NOT NULL,
+    "externalId" text NOT NULL,
+    "status" text NOT NULL,
+    "candidateId" text,
+    "jaatVectorVersion" text,
+    "error" text,
+    "createdAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "PartnerCandidateResult_batchId_fkey"
+        FOREIGN KEY ("batchId") REFERENCES "PartnerCandidateBatch" ("id")
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "PartnerCandidateResult_batchId_idx"
+    ON "PartnerCandidateResult" ("batchId");
+
+CREATE TABLE IF NOT EXISTS "PartnerAssessment" (
+    "id" text PRIMARY KEY,
+    "partnerId" text NOT NULL,
+    "environment" text NOT NULL,
+    "candidateId" text NOT NULL,
+    "templateId" text NOT NULL,
+    "deliveryMode" text NOT NULL,
+    "dueAt" timestamptz,
+    "notifyCandidate" boolean,
+    "createdAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "PartnerAssessment_partner_env_idx"
+    ON "PartnerAssessment" ("partnerId", "environment");
+
+CREATE TABLE IF NOT EXISTS "PartnerBatchAssessment" (
+    "id" text PRIMARY KEY,
+    "partnerId" text NOT NULL,
+    "environment" text NOT NULL,
+    "cohortId" text NOT NULL,
+    "templateId" text NOT NULL,
+    "candidateIds" text[] NOT NULL DEFAULT '{}'::text[],
+    "windowStart" timestamptz,
+    "windowEnd" timestamptz,
+    "queued" integer NOT NULL,
+    "createdAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "PartnerBatchAssessment_partner_env_idx"
+    ON "PartnerBatchAssessment" ("partnerId", "environment");
+
+CREATE TABLE IF NOT EXISTS "PartnerPlacement" (
+    "id" text PRIMARY KEY,
+    "partnerId" text NOT NULL,
+    "environment" text NOT NULL,
+    "candidateId" text NOT NULL,
+    "jobId" text NOT NULL,
+    "employerName" text NOT NULL,
+    "placementDate" text NOT NULL,
+    "employmentType" text NOT NULL,
+    "createdAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "PartnerPlacement_partner_env_idx"
+    ON "PartnerPlacement" ("partnerId", "environment");

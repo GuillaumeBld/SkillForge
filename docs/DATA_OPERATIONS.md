@@ -165,7 +165,7 @@ If no DSN is supplied, local runs fall back to
    cd apps/api
    npm install
    ```
-5. Verify connectivity via Prisma:
+5. Verify connectivity via Prisma (run within `apps/api`):
    ```bash
    npx prisma migrate status
    ```
@@ -193,8 +193,12 @@ If no DSN is supplied, local runs fall back to
 
 - Inspect `ops/fixtures/onet/<env>/manifest.json` for the target environment.
 - Update the JSON fixtures (`occupations.json`, `skills.json`,
-  `occupation_skills.json`, `tasks.json`) with the desired dataset, keeping the
-  columns aligned with the reference schema in `docs/DATA.md`.
+  `occupation_skills.json`, `knowledge.json`, `occupation_knowledge.json`,
+  `abilities.json`, `tasks.json`) with the desired dataset, keeping the columns
+  aligned with the reference schema in `docs/DATA.md`.
+- Use stable UUIDs for `id` fields so that join tables (e.g.
+  `occupation_skills`, `occupation_knowledge`, and `jaat_tasks`) reference the
+  same records across refreshes.
 - Execute the workspace command:
   ```bash
   npm run seed:local       # ops/fixtures/onet/local
@@ -222,7 +226,9 @@ All operations run inside a single PostgreSQL transaction. Inserts use
 - Local fixtures contain development samples; `ci` ships a minimal dataset for
   pipelines.
 - Staging/production directories default to empty arrays—populate them with the
-  authoritative data exports before seeding.
+  authoritative data exports before seeding. When staging diverges from
+  production (e.g. testing a new release), copy fixtures between directories or
+  maintain per-environment manifests tailored to the dataset under review.
 - If staging or production databases need different credentials, set the
   corresponding `SKILLFORGE_<ENV>_DATABASE_URL` (e.g.
   `export SKILLFORGE_PRODUCTION_DATABASE_URL=postgresql://...`).
@@ -240,36 +246,51 @@ All operations run inside a single PostgreSQL transaction. Inserts use
 
 ### Flyway Schema Management
 
-Flyway shares connection settings with Prisma. Set `DATABASE_URL`
-(or `SKILLFORGE_<ENV>_DATABASE_URL`) before running the workspace scripts; the
-wrapper at `ops/scripts/run-flyway.js` derives `FLYWAY_*` variables automatically.
+Flyway shares connection settings with Prisma. Export `DATABASE_URL` (or
+`SKILLFORGE_<ENV>_DATABASE_URL`) before running the workspace scripts;
+`ops/scripts/run-flyway.js` derives the `FLYWAY_*` variables automatically.
 
 #### Baseline migrations
 
-Run during release drills to ensure core tables exist:
+Run during release drills to make sure every Prisma table exists:
 
-```bash
-DATABASE_URL=postgresql://user:pass@host:5432/skillforge npm run flyway:migrate
-npm run flyway:info
-```
+1. Export the connection string:
+   ```bash
+   export DATABASE_URL=postgresql://user:pass@host:5432/skillforge
+   ```
+2. Apply the baseline migrations:
+   ```bash
+   npm run flyway:migrate
+   ```
+3. Verify status:
+   ```bash
+   npm run flyway:info
+   ```
 
-`flyway:migrate` applies `V1_0__create_core_app_tables.sql` and
-`V1_1__create_reference_tables.sql`, aligning with the Prisma schema.
+`npm run flyway:migrate` runs `V1_0__create_core_app_tables.sql` and
+`V1_1__create_reference_tables.sql`, ensuring the application and O\*NET/JAAT
+reference tables match the Prisma schema.
 
 #### Repeatable reporting aggregates
 
 After seeding or refreshing O\*NET/JAAT data, rebuild reporting views:
 
-```bash
-DATABASE_URL=postgresql://user:pass@host:5432/skillforge npm run flyway:migrate
-npm run flyway:info | grep R__onet_reporting_views
-```
+1. Export the same connection string (reuse the value from above if still set).
+2. Rerun Flyway to refresh repeatable migrations:
+   ```bash
+   npm run flyway:migrate
+   ```
+3. Confirm the reporting bundle refreshed:
+   ```bash
+   npm run flyway:info | grep R__onet_reporting_views
+   ```
 
-The repeatable script refreshes:
+The repeatable script recreates and refreshes:
 
 - `reporting.onet_skill_coverage` (materialized view)
 - `reporting.onet_skill_category_summary` (materialized view)
 - `reporting.onet_source_versions` (view)
 
-No additional manual SQL is required; Flyway refreshes the materialized views
-as part of the migration.
+No additional manual SQL is required; Flyway rebuilds the materialized views
+as part of the migration run.
+
