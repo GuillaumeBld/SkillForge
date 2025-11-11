@@ -12,8 +12,8 @@
           "legendFormat": "Prod CPU"
         },
         {
-          "expr": "avg(node_cpu_utilisation_percent{environment=\"staging\"})",
-          "legendFormat": "Staging CPU"
+          "expr": "k8s:node_cpu_utilisation_percent:avg_staging_baseline",
+          "legendFormat": "Staging Baseline CPU"
         }
       ],
       "title": "Node CPU Utilisation",
@@ -30,8 +30,8 @@
           "legendFormat": "Prod Unavailable"
         },
         {
-          "expr": "avg(kube_deployment_status_replicas_unavailable{environment=\"staging\"})",
-          "legendFormat": "Staging Unavailable"
+          "expr": "k8s:deployment_unavailable_replicas_staging_baseline",
+          "legendFormat": "Staging Baseline Unavailable"
         }
       ],
       "title": "Replica Availability",

@@ -12,6 +12,7 @@
 | 2025-11-07 19:15 | Post-deploy smoke tests complete | QA Lead | Validate synthetic flows, analytics events |
 | 2025-11-07 19:30 | Public status update + launch announcement | GTM Lead | Statuspage + marketing push |
 | 2025-11-08 16:00 | Post-launch retrospective | Cross-functional | Review metrics, capture action items |
+| 2025-11-14 17:00 | KPI review #1 & feedback loop | Product Analytics Lead | Weekly session with Support, Advisor Experience, and Customer Success to capture early signals and assign follow-ups |
 
 ## 2. PagerDuty Rotation Schedule (2025-11-06 → 2025-11-09)
 | Role | Primary | Secondary | Escalation Manager |

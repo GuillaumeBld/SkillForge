@@ -47,3 +47,23 @@ spec:
             sum by (namespace) (
               increase(kube_pod_container_status_restarts_total{environment="staging"}[1h])
             )
+        - record: frontend:tti_seconds:max_staging_baseline
+          expr: |-
+            max_over_time(
+              core_web_vitals_tti_seconds{environment="staging"}[15m]
+            )
+        - record: frontend:cls_score:avg_staging_baseline
+          expr: |-
+            avg_over_time(
+              core_web_vitals_cls_score{environment="staging"}[15m]
+            )
+        - record: k8s:node_cpu_utilisation_percent:avg_staging_baseline
+          expr: |-
+            avg_over_time(
+              node_cpu_utilisation_percent{environment="staging"}[15m]
+            )
+        - record: k8s:deployment_unavailable_replicas_staging_baseline
+          expr: |-
+            avg_over_time(
+              kube_deployment_status_replicas_unavailable{environment="staging"}[15m]
+            )

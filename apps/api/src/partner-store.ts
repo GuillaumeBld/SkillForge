@@ -385,7 +385,7 @@ class PrismaPartnerDataStore implements PartnerDataStore {
       throw new Error(`Batch ${batchId} has already been imported for this partner`);
     }
 
-    const record = await this.client.partnerCandidateBatch.create({
+    const record = (await this.client.partnerCandidateBatch.create({
       data: {
         id: batchId,
         partnerId,
@@ -410,7 +410,7 @@ class PrismaPartnerDataStore implements PartnerDataStore {
       include: {
         results: true
       }
-    });
+    })) as CandidateBatchRecord;
 
     return mapPrismaCandidateBatch(record);
   }
@@ -420,7 +420,7 @@ class PrismaPartnerDataStore implements PartnerDataStore {
     environment: Environment,
     batchId: string
   ): Promise<CandidateBatch | undefined> {
-    const record = await this.client.partnerCandidateBatch.findFirst({
+    const record = (await this.client.partnerCandidateBatch.findFirst({
       where: {
         id: batchId,
         partnerId,
@@ -429,7 +429,7 @@ class PrismaPartnerDataStore implements PartnerDataStore {
       include: {
         results: true
       }
-    });
+    })) as CandidateBatchRecord | null;
 
     return record ? mapPrismaCandidateBatch(record) : undefined;
   }

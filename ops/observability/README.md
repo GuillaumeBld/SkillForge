@@ -10,7 +10,7 @@ This directory contains declarative assets that provision the Grafana dashboards
 
 ## Baseline Alignment
 To keep production SLO baselines representative while still learning from staging regressions:
-1. Recording rules in `prometheus-baselines.yaml` roll up shared metrics from staging (`environment="staging"`) into auxiliary series with suffix `_staging_baseline`.
+1. Recording rules in `prometheus-baselines.yaml` roll up shared metrics from staging (`environment="staging"`) into auxiliary series with suffix `_staging_baseline`, covering API latency/error rate, frontend Core Web Vitals, cache health, and Kubernetes capacity signals.
 2. Grafana dashboards surface both production and staging baselines, allowing operators to compare regression signatures before a release.
 3. Alert rules only fire on production series but include staging trend annotations in notification templates so responders immediately see if an issue appeared during staging validation.
 

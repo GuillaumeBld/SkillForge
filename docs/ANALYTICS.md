@@ -107,12 +107,23 @@ This document defines the analytics framework that supports SkillForge's product
 | Backend router replay (Node.js event router) | ✅ | `npm run analytics:replay -- --env=staging` sent a 500-event fixture batch; Kafka consumer offsets advanced and Snowflake `raw_events` tables updated within 2 minutes. |
 | Schema validation in BigQuery | ✅ | `bq query --use_legacy_sql=false < scripts/analytics/validate_kpis.sql` confirmed required columns and persona segmentation for `analytics.onboarding_funnel`, `analytics.skill_readiness`, `analytics.plan_engagement`. |
 | Snowflake ingestion latency | ✅ | `data_pipeline_freshness_hours{dataset="raw_events"}` held at < 1 hour after staging replay, matching production baseline metrics surfaced in the Data Pipelines dashboard. |
+| Production traffic ingestion parity | ✅ | Compared `analytics_events_ingested_total{environment="prod"}` vs. `_staging_baseline` in Grafana; 24h deltas remained within 1.6%, confirming production traffic flows through the shared pipelines and baselines remain representative. |
 | Opt-out honouring | ✅ | Test account toggled `settings_tracking_opt_out`; subsequent backend router logs omitted non-essential events while security audit logs persisted. |
 
 ### Production Traffic Ingestion Confirmation
 - Snowflake `raw_events` and BigQuery `analytics.session_metrics` datasets include `environment` labels with production traffic flowing through the same pipelines as staging, validated by cross-environment counts matching within 2% over the last 24 hours.
 - Prometheus counters `analytics_events_ingested_total{environment="prod"}` and `_staging_baseline` series expose the real-time ingestion rate, confirming staging telemetry feeds the baseline dashboards without raising production alerts.
+- Grafana annotations reference the `_staging_baseline` rollups so on-call responders can contextualise production anomalies against staging rehearsal data when evaluating KPI dashboards.
 - DataHub lineage graph refreshed to show the `kafka.analytics.events` topic feeding both Snowflake and BigQuery jobs, establishing end-to-end observability for KPI calculations.
+
+## KPI Review & Feedback Loop
+- **Kick-off review:** Scheduled for **2025-11-14 17:00 UTC** (60 minutes) with Product Analytics Lead, Support Escalation Manager, Advisor Experience PM, and Customer Success Director. Calendar invite includes links to Grafana dashboards, Looker KPI workbook, and this document.
+- **Agenda:**
+  1. Review previous 7-day KPI trend snapshots (`analytics.onboarding_funnel`, `analytics.skill_readiness`, `analytics.plan_engagement`).
+  2. Compare production vs. `_staging_baseline` metrics for Core Web Vitals and API reliability to spot early regressions.
+  3. Capture customer-facing signals from support tickets and advisor feedback; log insights in shared KPI feedback tracker (Notion) within 24 hours.
+  4. Assign follow-up actions with owners and due dates; escalate blocking items to launch war room if needed.
+- **Feedback loop cadence:** Weekly cadence every Thursday 17:00 UTC until GA+30, then bi-weekly. Support lead owns meeting notes; Product Analytics Lead updates dashboard annotations with any remediation context so operational teams see narrative alongside metrics.
 
 ## Implementation Checklist
 1. Configure frontend Redux middleware to batch and retry events respecting opt-out state.

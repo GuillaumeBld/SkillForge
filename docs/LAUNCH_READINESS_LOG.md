@@ -2,6 +2,9 @@
 
 | Timestamp (UTC) | Operation | Status | Notes |
 | --- | --- | --- | --- |
+| 2025-11-10T09:30:00Z | KPI feedback loop kickoff invite | Completed | Scheduled 2025-11-14 KPI review with product analytics, support escalation, advisor experience, and customer success stakeholders; agenda and dashboards linked in `docs/ANALYTICS.md` §"KPI Review & Feedback Loop". |
+| 2025-11-10T09:10:00Z | Production analytics parity audit | Completed | Compared `analytics_events_ingested_total{environment="prod"}` vs. `_staging_baseline` in Grafana; documented ≤1.6% delta confirmation and response workflow in `docs/ANALYTICS.md`. |
+| 2025-11-10T08:45:00Z | Staging baseline rollup refresh | Completed | Extended Prometheus recording rules to cover frontend Core Web Vitals and Kubernetes capacity, updating dashboards to consume `_staging_baseline` series per `ops/observability/`. |
 | 2025-11-09T23:18:00Z | CI OpenAPI enforcement | Completed | Updated `.github/workflows/ci.yml` to run `npm run openapi:generate --workspace @skillforge/shared` and `npm run validate --workspace @skillforge/shared` without attempting to mutate repository history. |
 | 2025-11-07T15:12:46Z | Flyway baseline migrations | Completed | Executed `npm run flyway:migrate` against staging database using `ops/scripts/run-flyway.js`; migration history recorded in Flyway schema table and Terraform artifact archive. |
 | 2025-11-07T15:13:12Z | Prisma migrate deploy | Completed | `npx prisma migrate deploy --schema apps/api/prisma/schema.prisma` succeeded against managed PostgreSQL; schema version matches `20240801000000_partner_persistence`. |
