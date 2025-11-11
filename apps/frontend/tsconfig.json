@@ -10,6 +10,6 @@
       "@skillforge/shared/*": ["../../packages/shared/src/*"]
     }
   },
-  "include": ["src", "vitest.setup.ts"],
+  "include": ["src", "vitest.setup.ts", "e2e"],
   "exclude": ["dist", "node_modules"]
 }

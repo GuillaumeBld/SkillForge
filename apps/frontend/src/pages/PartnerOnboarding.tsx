@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from 'react';
 import {
-  Alert,
   Box,
   Card,
   CardContent,
@@ -68,25 +67,50 @@ export const PartnerOnboarding = () => {
                 Integration readiness
               </Typography>
               <List dense disablePadding>
-                {integrationChecks.map((check) => (
-                  <ListItem key={check.id} className="flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <ListItemText
-                      primaryTypographyProps={{ variant: 'subtitle1', className: 'font-semibold' }}
-                      primary={check.title}
-                      secondary={check.detail}
-                    />
-                    <Chip
-                      label={check.status}
-                      color={check.status === 'Connected' ? 'success' : check.status === 'Pending' ? 'warning' : 'info'}
-                      variant="outlined"
-                      size="small"
-                    />
+                {integrationChecks.map((check) => {
+                  const statusColor = (check.status === 'Connected'
+                    ? 'success'
+                    : check.status === 'Pending'
+                      ? 'warning'
+                      : 'info') as 'success' | 'warning' | 'info';
+                  const toneStyles = {
+                    success: { backgroundColor: '#dcfce7', borderColor: '#22c55e', textColor: '#14532d' },
+                    warning: { backgroundColor: '#fef3c7', borderColor: '#f59e0b', textColor: '#78350f' },
+                    info: { backgroundColor: '#e0f2fe', borderColor: '#0ea5e9', textColor: '#0c4a6e' }
+                  } as const;
+                  const tone = toneStyles[statusColor];
+                  const contrastStyles = {
+                    backgroundColor: tone.backgroundColor,
+                    border: `1px solid ${tone.borderColor}`,
+                    color: tone.textColor,
+                    '& .MuiChip-label': { fontWeight: 600 }
+                  };
+
+                  return (
+                    <ListItem
+                      key={check.id}
+                      className="flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <ListItemText
+                        primaryTypographyProps={{ variant: 'subtitle1', className: 'font-semibold' }}
+                        primary={check.title}
+                        secondary={check.detail}
+                      />
+                        <Chip label={check.status} size="small" variant="filled" sx={contrastStyles} />
                   </ListItem>
-                ))}
+                );
+              })}
               </List>
-              <Alert severity="info" variant="outlined" role="status" aria-live="polite">
-                ATS integration is pending partner API credentials. Automated reminders will send every 48 hours.
-              </Alert>
+              <Box
+                role="status"
+                aria-live="polite"
+                tabIndex={0}
+                className="rounded-3xl border border-sky-200 bg-sky-50 p-4 text-sky-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 dark:border-sky-400/40 dark:bg-sky-900/30 dark:text-sky-50"
+              >
+                <Typography component="p" variant="body2">
+                  ATS integration is pending partner API credentials. Automated reminders will send every 48 hours.
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -126,9 +150,16 @@ export const PartnerOnboarding = () => {
                 Open questions
               </Typography>
               {openQuestions.length === 0 ? (
-                <Alert severity="success" role="status" aria-live="polite">
-                  All onboarding questions resolved. Schedule launch retro with partner success.
-                </Alert>
+                <Box
+                  role="status"
+                  aria-live="polite"
+                  tabIndex={0}
+                  className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-emerald-400/40 dark:bg-emerald-900/30 dark:text-emerald-100"
+                >
+                  <Typography component="p" variant="body2">
+                    All onboarding questions resolved. Schedule launch retro with partner success.
+                  </Typography>
+                </Box>
               ) : (
                 openQuestions.map((item) => (
                   <Box key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:bg-slate-800">

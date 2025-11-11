@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from 'react';
 import {
-  Alert,
   Box,
   Card,
   CardContent,
@@ -104,9 +103,16 @@ export const LearnerDashboard = () => {
                 Upcoming live sessions
               </Typography>
               {upcomingSessions.length === 0 ? (
-                <Alert severity="info" variant="outlined" role="status" aria-live="polite">
-                  No sessions scheduled yet. Use the advisor console to request a time or join group office hours.
-                </Alert>
+                <Box
+                  role="status"
+                  aria-live="polite"
+                  tabIndex={0}
+                  className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sky-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 dark:border-sky-400/40 dark:bg-sky-900/30 dark:text-sky-50"
+                >
+                  <Typography component="p" variant="body2">
+                    No sessions scheduled yet. Use the advisor console to request a time or join group office hours.
+                  </Typography>
+                </Box>
               ) : (
                 <List dense>
                   {upcomingSessions.map((session) => (
@@ -175,9 +181,16 @@ export const LearnerDashboard = () => {
         </CardContent>
       </Card>
       {insightsError ? (
-        <Alert severity="error" role="alert" className="rounded-3xl border border-rose-200" aria-live="assertive">
-          {insightsError}
-        </Alert>
+        <Box
+          role="alert"
+          aria-live="assertive"
+          tabIndex={0}
+          className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-rose-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:border-rose-400/40 dark:bg-rose-950/40 dark:text-rose-100"
+        >
+          <Typography component="p" variant="body2">
+            {insightsError}
+          </Typography>
+        </Box>
       ) : null}
     </Box>
   );
