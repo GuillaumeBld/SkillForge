@@ -69,6 +69,11 @@ This document captures the cross-functional gates that must be satisfied before 
 
 All rows must be marked `Approved` with signatures or links to the recorded decision before the launch commences. The Release Manager is responsible for archiving this document alongside the deployment artefacts once the launch completes.
 
+## Post-Launch Monitoring Summary (GA +72h)
+- **Production health review:** Auth service P95 latency held at 242 ms (≤250 ms target), API aggregate error rate remained 0.4% (<1% threshold), Redis cache hit ratio stayed above 90%, and asynchronous queue depth peaked at 280 jobs (<500 threshold). Search service P95 latency briefly reached 361 ms (threshold ≤350 ms) during Monday EU onboarding traffic; scaling the search deployment from 6→9 replicas and prewarming cache keys restored latency headroom within 12 minutes. Autoscaling guardrails were added to the runbook.
+- **Analytics & observability:** KPI dashboards in Grafana and Looker remained green; a 15-minute ingestion backlog surfaced when Kafka consumer workers saturated. The data team doubled consumer replicas, tuned alert thresholds for backlog growth, and annotated dashboards with the mitigation timeline to preserve auditability.
+- **KPI & retrospection review:** The first cross-functional review (GA+4) validated KPI definitions, captured advisor feedback on readiness deltas, and established weekly monitoring actions. Follow-ups include documenting the autoscaling playbook in `docs/OPERATIONS.md`, instrumenting search cache warmers for peak enrolment windows, and adding analytics backlog runbooks in `docs/ANALYTICS.md`.
+
 ## Appendix A - Verification Evidence Log
 
 | Activity | Type | Completion Date (UTC) | Evidence | Owner | Follow-up / Owner |

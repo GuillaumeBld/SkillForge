@@ -5,13 +5,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, beforeEach, afterAll, vi } from 'vitest';
 import App from './App';
 import { store } from './store/store';
-import * as api from './api/client';
-import { ANALYTICS_EVENTS } from './analytics/events';
-import * as analytics from './analytics/events';
+import { createQueryClient } from './api/queryClient';
 
-vi.mock('./api/client', () => ({
-  fetchHealth: vi.fn(() => Promise.resolve({ status: 'ok', timestamp: new Date().toISOString() }))
-}));
+const renderApp = (initialRoute = '/') => {
+  const queryClient = createQueryClient();
 
 const renderAppAt = (initialEntry: string) =>
   render(
