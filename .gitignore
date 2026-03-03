@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+data/skillforge.db
+data/embeddings_cache.json
+*.egg-info/
+.env
