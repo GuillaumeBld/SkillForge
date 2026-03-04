@@ -68,6 +68,20 @@ def init_db() -> None:
                 composite               REAL DEFAULT 0.0,
                 updated_at              TEXT DEFAULT (datetime('now'))
             );
+
+            CREATE TABLE IF NOT EXISTS jvws_vacancies (
+                noc_code         TEXT PRIMARY KEY,
+                vacancy_rate     REAL NOT NULL,
+                reference_period TEXT NOT NULL,
+                updated_at       TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS jobbank_postings (
+                noc_code         TEXT PRIMARY KEY,
+                posting_count    INTEGER NOT NULL,
+                reference_month  TEXT NOT NULL,
+                updated_at       TEXT DEFAULT (datetime('now'))
+            );
         """)
 
 
@@ -147,3 +161,45 @@ def get_all_embeddings(conn) -> dict[str, list[float]]:
 def get_all_demand_signals(conn) -> dict[str, float]:
     rows = conn.execute("SELECT noc_code, composite FROM demand_signals").fetchall()
     return {r["noc_code"]: r["composite"] for r in rows}
+
+
+def upsert_jvws(conn, noc_code: str, vacancy_rate: float, reference_period: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO jvws_vacancies (noc_code, vacancy_rate, reference_period)
+        VALUES (?, ?, ?)
+        ON CONFLICT(noc_code) DO UPDATE SET
+            vacancy_rate=excluded.vacancy_rate,
+            reference_period=excluded.reference_period,
+            updated_at=datetime('now')
+        """,
+        (noc_code, vacancy_rate, reference_period),
+    )
+
+
+def upsert_jobbank(conn, noc_code: str, posting_count: int, reference_month: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO jobbank_postings (noc_code, posting_count, reference_month)
+        VALUES (?, ?, ?)
+        ON CONFLICT(noc_code) DO UPDATE SET
+            posting_count=excluded.posting_count,
+            reference_month=excluded.reference_month,
+            updated_at=datetime('now')
+        """,
+        (noc_code, posting_count, reference_month),
+    )
+
+
+def get_live_vacancy_data(conn, noc_code: str) -> tuple:
+    """Return (jvws_vacancy_rate, jobbank_posting_count) or (None, None) if no data."""
+    vr_row = conn.execute(
+        "SELECT vacancy_rate FROM jvws_vacancies WHERE noc_code=?", (noc_code,)
+    ).fetchone()
+    jb_row = conn.execute(
+        "SELECT posting_count FROM jobbank_postings WHERE noc_code=?", (noc_code,)
+    ).fetchone()
+    return (
+        vr_row["vacancy_rate"] if vr_row else None,
+        jb_row["posting_count"] if jb_row else None,
+    )
