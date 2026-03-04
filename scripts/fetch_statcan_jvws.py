@@ -121,7 +121,7 @@ def main(dry_run: bool = False):
     # Check if we already have this quarter's data
     with db.db() as conn:
         existing = conn.execute(
-            "SELECT reference_period FROM jvws_vacancies LIMIT 1"
+            "SELECT reference_period FROM jvws_vacancies ORDER BY rowid DESC LIMIT 1"
         ).fetchone()
 
     logger.info("Downloading JVWS table 14-10-0441-01 from StatCan...")
@@ -152,8 +152,9 @@ def main(dry_run: bool = False):
 
     with db.db() as conn:
         for noc_code, vacancy_count in vacancies.items():
-            rate = vacancies_to_rate(noc_code, vacancy_count)
-            db.upsert_jvws(conn, noc_code, rate, reference_period)
+            employment = NOC_EMPLOYMENT_BASE.get(noc_code, DEFAULT_EMPLOYMENT)
+            raw_rate = vacancy_count / employment
+            db.upsert_jvws(conn, noc_code, raw_rate, reference_period)
 
     logger.info(f"Upserted {len(vacancies)} NOC codes into jvws_vacancies")
 

@@ -2,7 +2,8 @@
 Labour market demand signal aggregation.
 
 Sources:
-  - Job Bank API (Canada.ca) — vacancy postings ratio
+  - StatCan JVWS 14-10-0441-01 (quarterly employer vacancy survey)
+  - Job Bank monthly postings (open.canada.ca)
   - COPS shortage list (Employment and Social Development Canada)
   - Express Entry priority NOC codes (IRCC)
   - StatCan retirement replacement demand estimates
@@ -10,8 +11,9 @@ Sources:
 All signals normalized to [0, 1] before composite weighting.
 """
 
-import httpx
 import logging
+import math
+from datetime import date as _date
 from typing import Optional
 from .models import DemandSignal
 
@@ -61,35 +63,75 @@ def _broad_cat(noc_code: str) -> str:
     return _TEER_TO_CAT.get(noc_code[0], "other")
 
 
-async def fetch_job_bank_vacancy_ratio(noc_code: str) -> float:
-    """
-    Query Job Bank API for active postings relative to labour force size.
+# Seasonal correction for trades (NOC 7xxx) and natural resources (NOC 8xxx).
+# Multiplies the blended vacancy signal to correct for construction seasonality.
+SEASONAL_WEIGHT: dict[int, float] = {
+    1: 1.25, 2: 1.20, 3: 1.10,
+    4: 1.00, 5: 1.00, 6: 1.00,
+    7: 1.00, 8: 1.00, 9: 1.00,
+    10: 1.05, 11: 1.15, 12: 1.25,
+}
 
-    Returns a 0.0-1.0 normalized ratio. Falls back to 0.5 on error.
-    """
+_VR_MIN = 0.005   # 0.5% raw vacancy rate → score 0.0
+_VR_MAX = 0.08    # 8.0% raw vacancy rate → score 1.0
+
+
+def _normalize_vr(vr: float) -> float:
+    """Normalize a raw vacancy rate (e.g. 0.065) to [0, 1]."""
+    return min(max((vr - _VR_MIN) / (_VR_MAX - _VR_MIN), 0.0), 1.0)
+
+
+def _log_normalize_jobbank(posting_count: int, max_count: int = 5000) -> float:
+    """Log-normalize a posting count to [0, 1]."""
+    if posting_count <= 0:
+        return 0.0
+    return min(math.log(1 + posting_count) / math.log(1 + max_count), 1.0)
+
+
+def _read_live_vacancy_data(noc_code: str) -> tuple:
+    """Read live JVWS and Job Bank data from SQLite. Returns (raw_vr, posting_count)."""
     try:
-        url = f"https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring=&locationstring=Canada&noc={noc_code}&fprov=&fc=&frat=6&fnoc=&button.submit=Search"
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(url, follow_redirects=True)
-        # Job Bank doesn't have a clean JSON API; scraping is fragile.
-        # TODO: Replace with official ESDC data feeds when available.
-        # For MVP: return mocked signal based on COPS shortage list.
-        return 0.75 if noc_code in COPS_SHORTAGE_CODES else 0.40
+        import db
+        with db.db() as conn:
+            return db.get_live_vacancy_data(conn, noc_code)
     except Exception as exc:
-        logger.warning(f"Job Bank fetch failed for {noc_code}: {exc}")
-        return 0.50  # neutral fallback
+        logger.debug(f"Live vacancy data unavailable for {noc_code}: {exc}")
+        return None, None
+
+
+def get_vacancy_signal(noc_code: str, month: Optional[int] = None) -> float:
+    """
+    Return a 0-1 vacancy demand signal for a NOC code.
+
+    Priority: live JVWS + Job Bank data → static COPS fallback.
+    Applies seasonal correction for trades (7xxx) and natural resources (8xxx).
+    """
+    if month is None:
+        month = _date.today().month
+
+    vr, posting_count = _read_live_vacancy_data(noc_code)
+
+    if vr is None and posting_count is None:
+        return 0.75 if noc_code in COPS_SHORTAGE_CODES else 0.40
+
+    vr_score = _normalize_vr(vr) if vr is not None else 0.5
+    jb_score = _log_normalize_jobbank(posting_count) if posting_count is not None else 0.5
+
+    signal = 0.65 * vr_score + 0.35 * jb_score
+
+    if noc_code and noc_code[0] in ("7", "8"):
+        signal *= SEASONAL_WEIGHT.get(month, 1.0)
+
+    return min(max(signal, 0.0), 1.0)
 
 
 def build_demand_signal(noc_code: str, vacancy_rate: Optional[float] = None) -> DemandSignal:
     """
     Build a DemandSignal for a given NOC code using available signals.
     """
-    from typing import Optional  # local import to avoid circular
     sig = DemandSignal(noc_code=noc_code)
 
-    sig.vacancy_rate = vacancy_rate if vacancy_rate is not None else (
-        0.75 if noc_code in COPS_SHORTAGE_CODES else 0.40
-    )
+    sig.vacancy_rate = vacancy_rate if vacancy_rate is not None else get_vacancy_signal(noc_code)
     sig.cops_shortage = 1.0 if noc_code in COPS_SHORTAGE_CODES else 0.0
     sig.express_entry_priority = 1.0 if noc_code in EXPRESS_ENTRY_PRIORITY else 0.0
     sig.retirement_replacement = REPLACEMENT_DEMAND.get(_broad_cat(noc_code), 0.45)

@@ -82,13 +82,16 @@ def main(dry_run: bool = False):
         logger.error(f"CKAN API error: {exc}")
         sys.exit(1)
 
-    reference_month = extract_reference_month(resource_name) or "unknown"
+    reference_month = extract_reference_month(resource_name)
+    if reference_month is None:
+        logger.error(f"Could not extract reference month from resource name: {resource_name!r}")
+        sys.exit(1)
     logger.info(f"Latest resource: {resource_name} (month: {reference_month})")
 
     # Check if we already have this month's data
     with db.db() as conn:
         existing = conn.execute(
-            "SELECT reference_month FROM jobbank_postings LIMIT 1"
+            "SELECT reference_month FROM jobbank_postings ORDER BY rowid DESC LIMIT 1"
         ).fetchone()
     if existing and existing["reference_month"] == reference_month:
         logger.info(f"Already have {reference_month} data. Exiting.")
