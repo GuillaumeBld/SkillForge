@@ -107,6 +107,23 @@ class MatchRequest(BaseModel):
     top_k: int = Field(default=10, ge=1, le=50)
 
 
+class SkillsMatchRequest(BaseModel):
+    current_title: str = Field(..., description="Current job title (free text)")
+    skills: list[str] = Field(default_factory=list, description="Skills extracted from resume")
+    years_experience: int = Field(default=5, ge=0, le=50)
+    education_level: str = Field(
+        default="college",
+        pattern="^(secondary|college|university)$"
+    )
+    is_youth: bool = False
+    is_newcomer: bool = False
+    is_indigenous: bool = False
+    is_visible_minority: bool = False
+    is_person_with_disability: bool = False
+    province: str = Field(default="ON", max_length=2)
+    top_k: int = Field(default=10, ge=1, le=50)
+
+
 class MatchResultItem(BaseModel):
     noc_code: str
     title: str
@@ -197,6 +214,64 @@ def match_occupations(req: MatchRequest):
 
     return MatchResponse(
         source_noc=req.current_noc,
+        source_title=req.current_title,
+        matches=[
+            MatchResultItem(
+                noc_code=m.noc_code,
+                title=m.title,
+                teer=m.teer,
+                composite_score=round(m.composite_score, 4),
+                skill_similarity=round(m.skill_similarity, 4),
+                demand_score=round(m.demand_score, 4),
+                wage_growth=round(m.wage_growth, 4),
+                funding_eligible=m.funding_eligible,
+                training_programs=m.training_programs,
+                ai_tools=m.ai_tools,
+            )
+            for m in enriched
+        ],
+        embeddings_loaded=len(_cache["embeddings"]),
+    )
+
+
+@app.post("/match-by-skills", response_model=MatchResponse)
+def match_by_skills(req: SkillsMatchRequest):
+    if not _cache["embeddings"]:
+        raise HTTPException(
+            status_code=503,
+            detail="Embeddings not loaded. Run scripts/generate_embeddings.py first.",
+        )
+
+    # Embed directly from provided title + skills (no DB lookup needed)
+    source_vec = embed_occupation(req.current_title, req.skills)
+
+    profile = UserProfile(
+        current_noc="",
+        current_title=req.current_title,
+        years_experience=req.years_experience,
+        education_level=req.education_level,
+        is_youth=req.is_youth,
+        is_newcomer=req.is_newcomer,
+        is_indigenous=req.is_indigenous,
+        is_visible_minority=req.is_visible_minority,
+        is_person_with_disability=req.is_person_with_disability,
+        province=req.province,
+    )
+
+    matches = rank_occupations(
+        source_embedding=source_vec,
+        corpus_embeddings=_cache["embeddings"],
+        demand_scores=_cache["demand"],
+        wage_scores=_cache["wage"],
+        occupation_meta=_cache["occ_meta"],
+        top_k=req.top_k,
+        exclude_noc=None,  # no current NOC to exclude
+    )
+
+    enriched = [enrich_match(m, profile) for m in matches]
+
+    return MatchResponse(
+        source_noc="",
         source_title=req.current_title,
         matches=[
             MatchResultItem(
