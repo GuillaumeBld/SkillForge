@@ -1,4 +1,4 @@
-.PHONY: install ingest seed embed demand test run
+.PHONY: install ingest seed embed embed-full demand fetch-jvws fetch-jobbank update-demand build-noc-corpus test run run-prod
 
 install:
 	pip3 install -r requirements.txt
@@ -18,6 +18,18 @@ embed-full:
 
 demand:
 	python3 scripts/seed_demand.py
+
+fetch-jvws:
+	python3 scripts/fetch_statcan_jvws.py
+
+fetch-jobbank:
+	python3 scripts/fetch_jobbank_monthly.py
+
+update-demand: fetch-jobbank fetch-jvws demand
+	@echo "Demand signals updated from live sources."
+
+build-noc-corpus:
+	python3 scripts/build_noc_corpus.py
 
 setup: seed embed demand
 
