@@ -56,6 +56,7 @@ class OccupationMatch:
     funding_eligible: bool = False
     training_programs: list[str] = field(default_factory=list)
     ai_tools: list[str] = field(default_factory=list)
+    transferable_skills: list[str] = field(default_factory=list)
 
 
 @dataclass

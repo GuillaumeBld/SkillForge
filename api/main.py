@@ -135,6 +135,7 @@ class MatchResultItem(BaseModel):
     funding_eligible: bool
     training_programs: list[str]
     ai_tools: list[str]
+    transferable_skills: list[str] = []
 
 
 class MatchResponse(BaseModel):
@@ -180,10 +181,17 @@ def match_occupations(req: MatchRequest):
 
     # Get source occupation skills from DB
     with db.db() as conn:
-        skills = db.get_skills_for_noc(conn, req.current_noc)
+        source_skills = db.get_skills_for_noc(conn, req.current_noc)
+        # Pre-fetch target skills for all matches in one pass
+        all_noc_skills: dict[str, set[str]] = {}
+        rows = conn.execute("SELECT noc_code, skill_label FROM skills_map").fetchall()
+        for row in rows:
+            all_noc_skills.setdefault(row["noc_code"], set()).add(row["skill_label"])
+
+    source_skill_set = set(source_skills)
 
     # Embed the source occupation
-    source_vec = embed_occupation(req.current_title, skills)
+    source_vec = embed_occupation(req.current_title, source_skills)
 
     # Run z-score matching
     profile = UserProfile(
@@ -227,6 +235,9 @@ def match_occupations(req: MatchRequest):
                 funding_eligible=m.funding_eligible,
                 training_programs=m.training_programs,
                 ai_tools=m.ai_tools,
+                transferable_skills=sorted(
+                    source_skill_set & all_noc_skills.get(m.noc_code, set())
+                ),
             )
             for m in enriched
         ],
@@ -244,6 +255,14 @@ def match_by_skills(req: SkillsMatchRequest):
 
     # Embed directly from provided title + skills (no DB lookup needed)
     source_vec = embed_occupation(req.current_title, req.skills)
+    source_skill_set = {s.strip() for s in req.skills}
+
+    # Pre-fetch all target skills
+    with db.db() as conn:
+        all_noc_skills: dict[str, set[str]] = {}
+        rows = conn.execute("SELECT noc_code, skill_label FROM skills_map").fetchall()
+        for row in rows:
+            all_noc_skills.setdefault(row["noc_code"], set()).add(row["skill_label"])
 
     profile = UserProfile(
         current_noc="",
@@ -285,6 +304,9 @@ def match_by_skills(req: SkillsMatchRequest):
                 funding_eligible=m.funding_eligible,
                 training_programs=m.training_programs,
                 ai_tools=m.ai_tools,
+                transferable_skills=sorted(
+                    source_skill_set & all_noc_skills.get(m.noc_code, set())
+                ),
             )
             for m in enriched
         ],
