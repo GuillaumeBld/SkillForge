@@ -24,6 +24,41 @@ OCCUPATIONS = [
         "Spreadsheet software", "Attention to detail", "Report writing",
         "Tax compliance", "Regulatory knowledge", "Problem-solving",
     ]),
+    ("1112", "Financial and investment analysts", 1, "business", [
+        "Financial modeling", "Investment analysis", "Risk assessment", "ESG analysis",
+        "Data analysis", "Bloomberg Terminal", "Python", "SQL", "Report writing",
+        "Equity research", "Credit risk", "Portfolio analysis", "FP&A",
+    ]),
+    ("1113", "Securities agents, investment dealers and brokers", 1, "business", [
+        "Financial markets", "Securities trading", "Client relationship management",
+        "Investment products", "Risk management", "Financial regulation",
+        "Portfolio management", "Negotiation",
+    ]),
+    ("0111", "Financial managers", 0, "management", [
+        "Financial planning", "Budgeting", "Financial reporting", "Team leadership",
+        "Risk management", "Strategic planning", "Stakeholder communication",
+        "Regulatory compliance", "Cash flow management",
+    ]),
+    ("2172", "Database analysts and data administrators", 1, "sciences", [
+        "SQL", "Database design", "Data modeling", "ETL", "Performance tuning",
+        "Data governance", "Python", "Snowflake", "Data warehousing",
+    ]),
+    ("2175", "Web designers and developers", 2, "sciences", [
+        "Web development", "HTML", "CSS", "JavaScript", "UI/UX design",
+        "Responsive design", "Version control", "CMS", "API integration",
+    ]),
+    ("2161", "Mathematicians, statisticians and actuaries", 1, "sciences", [
+        "Statistical analysis", "R", "Python", "Mathematical modeling",
+        "Data analysis", "Machine learning", "Risk modeling", "Report writing",
+    ]),
+    ("4169", "Other professional occupations in social science", 1, "social", [
+        "Research", "Data analysis", "Report writing", "Policy analysis",
+        "Stakeholder engagement", "Project management", "Communication",
+    ]),
+    ("1123", "Professional occupations in advertising, marketing and public relations", 1, "business", [
+        "Marketing strategy", "Content creation", "Data analytics", "SEO/SEM",
+        "Social media", "Campaign management", "Communication", "Market research",
+    ]),
     ("1311", "Accounting technicians and bookkeepers", 2, "business", [
         "Bookkeeping", "Accounts payable and receivable", "Payroll processing",
         "Financial record keeping", "Spreadsheet software", "Data entry",
