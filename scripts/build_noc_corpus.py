@@ -250,10 +250,7 @@ NOC_2021_UNIT_GROUPS = [
     ("6011", "Retail sales supervisors"),
     ("6012", "Food service supervisors"),
     ("6021", "Retail and wholesale buyers"),
-    ("6031", "Insurance agents and brokers"),
-    ("6032", "Real estate agents and salespersons"),
     ("6033", "Financial sales representatives"),
-    ("6211", "Retail salespersons"),
     ("6221", "Technical sales specialists"),
     ("6231", "Insurance agents and brokers"),
     ("6232", "Real estate agents and salespersons"),
@@ -424,6 +421,8 @@ def try_load_from_statcan() -> list[dict] | None:
 
 
 def main(seed_only: bool = False):
+    if seed_only:
+        logger.warning("--seed-only is ignored; NOC_2021_UNIT_GROUPS is always used as primary source.")
     # Primary: full NOC 2021 unit group list (hardcoded, always available)
     entries = [{"code": code, "title": title} for code, title in NOC_2021_UNIT_GROUPS]
     logger.info(f"Loaded {len(entries)} NOC 2021 unit groups")
