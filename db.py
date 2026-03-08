@@ -82,6 +82,20 @@ def init_db() -> None:
                 reference_month  TEXT NOT NULL,
                 updated_at       TEXT DEFAULT (datetime('now'))
             );
+
+            CREATE TABLE IF NOT EXISTS intake_records (
+                id               TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+                school_id        TEXT NOT NULL,
+                worker_title     TEXT NOT NULL,
+                source_noc       TEXT NOT NULL,
+                matched_noc      TEXT NOT NULL,
+                matched_title    TEXT NOT NULL,
+                composite_score  REAL NOT NULL,
+                funding_eligible INTEGER NOT NULL,
+                province         TEXT NOT NULL,
+                created_at       TEXT DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_intake_school ON intake_records(school_id, created_at DESC);
         """)
 
 

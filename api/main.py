@@ -325,6 +325,42 @@ def get_demand(noc_code: str):
     return DemandResponse(**dict(row))
 
 
+class IntakeRecord(BaseModel):
+    school_id: str
+    worker_title: str
+    source_noc: str
+    matched_noc: str
+    matched_title: str
+    composite_score: float
+    funding_eligible: bool
+    province: str
+
+
+@app.post("/intake", status_code=201)
+def save_intake(record: IntakeRecord):
+    with db.db() as conn:
+        conn.execute(
+            """INSERT INTO intake_records
+               (school_id, worker_title, source_noc, matched_noc, matched_title,
+                composite_score, funding_eligible, province)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (record.school_id, record.worker_title, record.source_noc,
+             record.matched_noc, record.matched_title, record.composite_score,
+             int(record.funding_eligible), record.province)
+        )
+    return {"status": "saved"}
+
+
+@app.get("/intake/{school_id}")
+def get_intake(school_id: str, limit: int = 50):
+    with db.db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM intake_records WHERE school_id=? ORDER BY created_at DESC LIMIT ?",
+            (school_id, limit)
+        ).fetchall()
+    return {"records": [dict(r) for r in rows]}
+
+
 @app.get("/funding")
 def get_funding_eligibility(
     is_youth: bool = False,
