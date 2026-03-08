@@ -27,49 +27,83 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 CKAN_API_URL = (
-    "https://open.canada.ca/api/3/action/package_show"
+    "https://open.canada.ca/data/api/3/action/package_show"
     "?id=ea639e28-c0fc-48bf-b5dd-b8899bd43072"
 )
 
 
 def get_latest_resource(ckan_url: str) -> tuple:
-    """Return (download_url, resource_name) for the most recent monthly CSV."""
+    """Return (download_url, ref_key) for the most recent English monthly CSV.
+
+    ref_key is the best available string to derive a YYYY-MM month from —
+    we try the resource URL first (contains 'jan2026' etc.), then last_modified.
+    """
     with httpx.Client(timeout=30) as client:
         resp = client.get(ckan_url)
         resp.raise_for_status()
     data = resp.json()
     resources = data["result"]["resources"]
-    csvs = [r for r in resources if r.get("format", "").upper() == "CSV"]
+    # Prefer English CSVs (URL or name contains '-en-')
+    csvs = [r for r in resources if r.get("format", "").upper() == "CSV"
+            and "-en-" in r.get("url", "").lower()]
+    if not csvs:
+        csvs = [r for r in resources if r.get("format", "").upper() == "CSV"]
     if not csvs:
         raise RuntimeError("No CSV resources found in Job Bank dataset")
     csvs.sort(key=lambda r: r.get("last_modified", ""), reverse=True)
     latest = csvs[0]
-    return latest["url"], latest["name"]
+    # Use URL as ref key (contains mon+year like 'jan2026') with last_modified fallback
+    ref_key = latest["url"] + " " + latest.get("last_modified", "")
+    return latest["url"], ref_key
 
 
 def aggregate_postings_by_noc(csv_bytes: bytes) -> dict:
-    """Sum num_vacancies by noc from a Job Bank monthly CSV."""
+    """Sum Vacancy Count by NOC 2016 Code from a Job Bank monthly CSV.
+
+    The CSV is UTF-16LE tab-delimited with 65 columns.
+    We use 'NOC 2016 Code' (4-digit, matches our NOC corpus) and
+    sum 'Vacancy Count' per code.
+    """
     result = {}
-    reader = csv.DictReader(io.TextIOWrapper(io.BytesIO(csv_bytes), encoding="utf-8-sig"))
+    text = csv_bytes.decode("utf-16-le", errors="replace")
+    reader = csv.DictReader(io.StringIO(text), delimiter="\t")
     for row in reader:
-        noc = row.get("noc", "").strip()
-        if not noc:
+        noc = (row.get("NOC 2016 Code") or "").strip()
+        if not noc or noc in ("NA", "*No data"):
             continue
-        raw = row.get("num_vacancies", "").strip()
-        if not raw:
-            continue
+        raw = (row.get("Vacancy Count") or "").strip()
         try:
-            count = int(raw)
+            count = int(raw) if raw and raw not in ("NA", "*No data") else 1
         except ValueError:
-            continue
+            count = 1
         result[noc] = result.get(noc, 0) + count
     return result
 
 
+_MONTH_MAP = {
+    "jan": "01", "feb": "02", "mar": "03", "apr": "04",
+    "may": "05", "jun": "06", "jul": "07", "aug": "08",
+    "sep": "09", "oct": "10", "nov": "11", "dec": "12",
+}
+
+
 def extract_reference_month(filename: str):
-    """Extract YYYY-MM from a filename like 'JobBankPostings_2025-01.csv'. Returns None if not found."""
+    """Extract YYYY-MM from filenames like:
+      - 'job-bank-open-data-all-job-postings-en-jan2026'  (open.canada.ca format)
+      - 'JobBankPostings_2025-01.csv'                     (legacy format)
+    Returns None if not found.
+    """
+    # Try YYYY-MM format first
     match = re.search(r"(\d{4}-\d{2})", filename)
-    return match.group(1) if match else None
+    if match:
+        return match.group(1)
+    # Try mon+year format (e.g. jan2026, dec2025)
+    match = re.search(r"([a-z]{3})(\d{4})", filename.lower())
+    if match:
+        mon, year = match.group(1), match.group(2)
+        if mon in _MONTH_MAP:
+            return f"{year}-{_MONTH_MAP[mon]}"
+    return None
 
 
 def main(dry_run: bool = False):
