@@ -11,13 +11,16 @@ Endpoints:
 
 import json
 import logging
+import os
 import numpy as np
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+_INTAKE_SECRET = os.environ.get("INTAKE_SECRET", "")
 
 import db
 from engine.embeddings import embed_occupation, load_embeddings
@@ -337,7 +340,9 @@ class IntakeRecord(BaseModel):
 
 
 @app.post("/intake", status_code=201)
-def save_intake(record: IntakeRecord):
+def save_intake(record: IntakeRecord, x_intake_secret: str = Header(default="")):
+    if _INTAKE_SECRET and x_intake_secret != _INTAKE_SECRET:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     with db.db() as conn:
         conn.execute(
             """INSERT INTO intake_records
@@ -352,7 +357,7 @@ def save_intake(record: IntakeRecord):
 
 
 @app.get("/intake/{school_id}")
-def get_intake(school_id: str, limit: int = 50):
+def get_intake(school_id: str, limit: int = Query(default=50, ge=1, le=200)):
     with db.db() as conn:
         rows = conn.execute(
             "SELECT * FROM intake_records WHERE school_id=? ORDER BY created_at DESC LIMIT ?",
