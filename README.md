@@ -51,12 +51,3 @@ For detailed technical specifications, integration guides, and partnership tiers
 6. Tail database logs if Prisma hangs: `docker compose logs -f skillforge-db`
 7. Tear the stack down after drills: `docker compose down` (add `-v` to drop the volume)
 
-## Contact
-
-Interested in partnering with SkillForge or learning more about our institutional offerings?
-
-- **Email**: partners@skillforge.dev
-- **Enterprise Inquiries**: enterprise@skillforge.dev
-- **GitHub Issues**: [Report issues or request features](https://github.com/GuillaumeBld/SkillForge/issues)
-
-For general questions about the platform, please open an issue in this repository.
